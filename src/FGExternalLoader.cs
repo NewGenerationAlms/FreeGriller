@@ -12,6 +12,7 @@ namespace NGA {
 public class FGLoadManifest {
     public List<FGMap> maps;
     public List<FGFaction> factions;
+    public List<FGContractTemplate> contractTemplates;
 }
 
 public class FGExternalLoader {
@@ -29,6 +30,9 @@ public class FGExternalLoader {
                             }
                             foreach (var faction in manifest.factions) {
                                 FG_GM.Instance.factionStance.RegisterFaction(faction);
+                            }
+                            foreach (var contractTemplate in manifest.contractTemplates) {
+                                FGContractTemplateFactory.RegisterTemplate(contractTemplate);
                             }
                         }
                     }

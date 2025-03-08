@@ -12,6 +12,11 @@ public class FGContractTemplateFactory
 
     public static void RegisterTemplate(FGContractTemplate template)
     {
+        var existingTemplate = contractTemplates.FirstOrDefault(t => t.TemplateID == template.TemplateID);
+        if (existingTemplate != null)
+        {
+            contractTemplates.Remove(existingTemplate);
+        }
         contractTemplates.Add(template);
     }
 
@@ -129,6 +134,7 @@ public class FGContractTemplateFactory
     }
 }
 
+[Serializable]
 public class FGContractTemplate
 {
     public string TemplateID; // Unique identifier for the template
