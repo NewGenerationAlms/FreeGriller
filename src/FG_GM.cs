@@ -20,6 +20,7 @@ namespace NGA
         private string saveSlotName = "SaveSlot0"; // TODO: Write code to be able to change this.
         public string wristUiSpawnId = "NGA_FgWristUi";
         private FGContract contractForTransition;
+        public FGMapsContainer MapContainer { get; private set; }
 
         private void Awake()
         {
@@ -40,6 +41,8 @@ namespace NGA
             timeSys = this.gameObject.AddComponent<FGTimeSystem>(); // First because others need its callbacks.
             mapLoader = this.gameObject.AddComponent<FGSceneManip>();
             contractMan = this.gameObject.AddComponent<FGContractManager>();
+            MapContainer = new FGMapsContainer();
+            MapContainer.Init();
             
             // Add event callbacks.
             SceneManager.sceneLoaded += OnSceneLoaded;

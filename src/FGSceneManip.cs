@@ -83,9 +83,7 @@ public class FGSceneManip : MonoBehaviour {
 		}
 
 		string sceneName = contract.SceneName;
-		string contract_civ_vault = contract.SceneCivConfigName == "" ? 
-									FGFileIoHandler.default_civ_vault_name 
-									: contract.SceneCivConfigName;
+		string contract_civ_vault = contract.SceneCivConfigName;
 		if (FGFileIoHandler.DoesAreaVaultFileExists(sceneName, contract_civ_vault))
 		{
 			SpawnAreaVaultFile(sceneName, contract_civ_vault);
