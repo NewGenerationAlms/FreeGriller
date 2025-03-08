@@ -4,6 +4,7 @@ using FistVR;
 using Sodalite.Api;
 using System;
 using System.IO;
+using System.Linq;
 
 namespace NGA {
 
@@ -11,7 +12,7 @@ namespace NGA {
 public class FGMap {
     public string sceneName;
     public string DisplayName;
-    public int price; // only used for homes
+    public int price = 0; // only used for homes
     public int mapType; // 0: Home, 1: Area
     // -- Area specific configs -- \\
     public string defaultCivSceneConfigFileName; // overrides "default_civ" config for map
@@ -49,9 +50,30 @@ public class FGMapsContainer {
     }
 
     public void RegisterMap(FGMap map, string sourceFolderName) {
-        maps.Add(map);
+        var existingMap = maps.Find(m => m.sceneName == map.sceneName);
+        if (existingMap == null) {
+            maps.Add(map);
+        } else {
+            // Update existing map with new data
+            existingMap.DisplayName = map.DisplayName;
+            existingMap.price = map.price;
+            existingMap.mapType = map.mapType;
+            existingMap.defaultCivSceneConfigFileName = Path.Combine(sourceFolderName, map.defaultCivSceneConfigFileName);
+            existingMap.defaultEnemySceneConfigFileName = Path.Combine(sourceFolderName, map.defaultEnemySceneConfigFileName);
+            existingMap.otherSceneConfigFileNames.AddRange(map.otherSceneConfigFileNames.Select(fileName => Path.Combine(sourceFolderName, fileName)));
+        }
+
+        // Copy default configs
+        if (!string.IsNullOrEmpty(map.defaultCivSceneConfigFileName)) {
+            FGFileIoHandler.CopyDefaultAreaConfigFile(map.sceneName, existingMap.defaultCivSceneConfigFileName, false);
+        }
+        if (!string.IsNullOrEmpty(map.defaultEnemySceneConfigFileName)) {
+            FGFileIoHandler.CopyDefaultAreaConfigFile(map.sceneName, existingMap.defaultEnemySceneConfigFileName, true);
+        }
+
+        // Copy other configs
         foreach (var configFileName in map.otherSceneConfigFileNames) {
-            FGFileIoHandler.CopyAreaConfigFile(map.sceneName, Path.Combine(sourceFolderName, configFileName));
+            FGFileIoHandler.CopyAreaConfigFile(map.sceneName, configFileName);
         }
     }
 }

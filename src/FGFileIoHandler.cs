@@ -209,6 +209,36 @@ namespace NGA
             }
         }
 
+        public static bool CopyDefaultAreaConfigFile(string sceneName, string fullConfigFileName,
+                                                        bool isEnemy)
+        {
+            try
+            {
+                string saveFolder = GetH3SaveFolder();
+                string folderPath = Path.Combine(saveFolder, rootSaveFolder);
+                folderPath = Path.Combine(folderPath, "SceneConfigs"); // Not saveslot specific.
+                folderPath = Path.Combine(folderPath, sceneName);
+
+                // Create the folder if it doesn't exist
+                if (!Directory.Exists(folderPath))
+                {
+                    Directory.CreateDirectory(folderPath);
+                }
+
+                string fileName = isEnemy ? default_enemy_vault_name : default_civ_vault_name;
+                string destinationFilePath = Path.Combine(folderPath, fileName + ".json");
+
+                File.Copy(fullConfigFileName, destinationFilePath, true);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"An error occurred while copying the default config file: {ex.Message}");
+                return false;
+            }
+        }
+
         public static bool LoadPlayerQuickbelt(string saveSlotName, out VaultFile vaultFile)
         {
             vaultFile = null;
