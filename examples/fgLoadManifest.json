@@ -1,0 +1,90 @@
+{
+    "maps": [
+      {
+        "sceneName": "IndoorRange_Updated",
+        "DisplayName": "Indoor Range",
+        "price": 0,
+        "mapType": 0,
+        "defaultCivSceneConfigFileName": "",
+        "defaultEnemySceneConfigFileName": "",
+        "otherSceneConfigFileNames": []
+      },
+      {
+        "sceneName": "Grillhouse_2Story",
+        "DisplayName": "Grillhouse",
+        "price": 0,
+        "mapType": 1,
+        "defaultCivSceneConfigFileName": "2storydefault.json",
+        "defaultEnemySceneConfigFileName": "2storyenemy.json",
+        "otherSceneConfigFileNames": [
+          "2storymultitarget.json"
+        ]
+      }
+    ],
+    "factions": [
+      {
+        "FactionId": "Hollys",
+        "currentReputation": 0,
+        "startingReputation": 0,
+        "maxPossibleReputation": 30,
+        "minPossibleReputation": -5,
+        "AlwaysHostileTowardsFactionIds": ["Buddys"]
+      },
+      {
+        "FactionId": "Buddys",
+        "currentReputation": 0,
+        "startingReputation": 0,
+        "maxPossibleReputation": 30,
+        "minPossibleReputation": -5,
+        "AlwaysHostileTowardsFactionIds": ["Hollys"]
+      }
+    ],
+    "contractTemplates": [
+      {
+        "TemplateID": "Hollys_LowRep",
+        "HiringFactionID": "Hollys",
+        "ReputationRequirements": [
+          {
+            "FactionID": "Hollys",
+            "MaximumRep": 10.0,
+            "MinimumRep": -10.0
+          }
+        ],
+        "Infraction": "Did Something bad",
+        "MinGuards": 0,
+        "MaxGuards": 1,
+        "PossibleGuardTypes": [400],
+        "PossibleGuardFactionIDs": ["Buddys"],
+        "MinTargets": 1,
+        "MaxTargets": 2,
+        "PossibleTargetTypes": [2000, 2001, 2003],
+        "PossibleTargetFactionIDs": ["Buddys"],
+        "MinExtras": 0,
+        "MaxExtras": 0,
+        "PossibleExtraTypes": [],
+        "PossibleScenes": ["Grillhouse_2Story"],
+        "PossibleSceneCivConfigs": ["default_civ"],
+        "PossibleSceneEnemConfigs": ["default_enemy"],
+        "MinCompensation": 90,
+        "MaxCompensation": 110,
+        "PossibleConstraints": [
+          {
+            "ConstraintID": "GrillViaProjectile",
+            "optional": false,
+            "rewardAddedIfSucceed": 50,
+            "rewardSubtractedIfFail": 50
+          }
+        ],
+        "RepRewards": [
+          {
+            "FactionID": "Hollys",
+            "Rep": 0.4
+          },
+          {
+            "FactionID": "Buddys",
+            "Rep": -0.8
+          }
+        ]
+      }
+    ]
+  }

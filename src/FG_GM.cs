@@ -46,13 +46,13 @@ namespace NGA
             MapContainer = new FGMapsContainer();
             bank = new FGBank();
             factionStance = new FGFactionStance();
-            FGExternalLoader.LoadManifestsFromBepinex();
             
             // Add event callbacks.
             SceneManager.sceneLoaded += OnSceneLoaded;
             SteamVR_Events.Loading.Listen(OnSceneChangeRequested);
             
             Init();
+            FGExternalLoader.LoadManifestsFromBepinex(); // Load after init so new templates/factions are added.
         }
 
         private void Init() {
