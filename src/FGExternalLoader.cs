@@ -11,6 +11,7 @@ namespace NGA {
 [Serializable]
 public class FGLoadManifest {
     public List<FGMap> maps;
+    public List<FGFaction> factions;
 }
 
 public class FGExternalLoader {
@@ -25,6 +26,9 @@ public class FGExternalLoader {
                         if (manifest != null) {
                             foreach (var map in manifest.maps) {
                                 FG_GM.Instance.MapContainer.RegisterMap(map, directory);
+                            }
+                            foreach (var faction in manifest.factions) {
+                                FG_GM.Instance.factionStance.RegisterFaction(faction);
                             }
                         }
                     }

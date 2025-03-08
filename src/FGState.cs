@@ -2,6 +2,9 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
+namespace NGA
+{
+
 [Serializable]
 public class FGState
 {
@@ -10,8 +13,10 @@ public class FGState
     [SerializeField] private List<string> valid_areas = new List<string>();
     public string timeSysConfig;
     public string contractManConfig;
+    public string bankConfig;
+    public string factionStanceConfig;
 
-    // TODO: Add character name.
+    // TODO: Add saveslot code.
 
     // Constructor (if needed, but optional)
     public FGState()
@@ -47,3 +52,5 @@ public class FGState
         }
     }
 }
+
+} // namespace NGA

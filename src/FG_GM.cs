@@ -14,6 +14,8 @@ namespace NGA
         public FGSceneManip mapLoader;
         public FGContractManager contractMan; 
         public FGTimeSystem timeSys;
+        public FGBank bank;
+        public FGFactionStance factionStance;
         public bool causedInTransitioningLevels = false;
         public string lastTransitionedToSceneName = "";
         public FGState saveState { get; private set; }
@@ -42,7 +44,9 @@ namespace NGA
             mapLoader = this.gameObject.AddComponent<FGSceneManip>();
             contractMan = this.gameObject.AddComponent<FGContractManager>();
             MapContainer = new FGMapsContainer();
-            MapContainer.Init();
+            bank = new FGBank();
+            factionStance = new FGFactionStance();
+            FGExternalLoader.LoadManifestsFromBepinex();
             
             // Add event callbacks.
             SceneManager.sceneLoaded += OnSceneLoaded;
@@ -74,6 +78,8 @@ namespace NGA
                     saveState = loadedState;
                     InitTimeSysFromSave();
                     InitContractManFromSave();
+                    InitBankFromSave();
+                    InitFactionStanceFromSave();
                 }
                 else
                 {
@@ -93,10 +99,22 @@ namespace NGA
                 .FromJson<FGContractManager.Config>(saveState.contractManConfig);
             contractMan.InitFromConfig(result);
         }
+        private void InitBankFromSave() {
+            FGBank.Config result = JsonUtility
+                .FromJson<FGBank.Config>(saveState.bankConfig);
+            bank.InitFromConfig(result);
+        }
+        private void InitFactionStanceFromSave() {
+            FGFactionStance.Config result = JsonUtility
+                .FromJson<FGFactionStance.Config>(saveState.factionStanceConfig);
+            factionStance.InitFromConfig(result);
+        }
 
         private void PrepareAndSave() {
             saveState.timeSysConfig = JsonUtility.ToJson(timeSys.GetConfig());
             saveState.contractManConfig = JsonUtility.ToJson(contractMan.GetConfig());
+            saveState.bankConfig = JsonUtility.ToJson(bank.GetConfig());
+            saveState.factionStanceConfig = JsonUtility.ToJson(factionStance.GetConfig());
             FGFileIoHandler.SaveFGState(saveSlotName, saveState);
         }
 

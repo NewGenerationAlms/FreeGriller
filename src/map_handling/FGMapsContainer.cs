@@ -23,15 +23,6 @@ public class FGMap {
 public class FGMapsContainer {
     public List<FGMap> maps = new List<FGMap>();
 
-    public void Init() {
-        RegisterDefaultMaps();
-        FGExternalLoader.LoadManifestsFromBepinex();
-    }
-
-    public void RegisterDefaultMaps() {
-        // TODO: Add any future default maps here, right now they're passed through manifest.
-    }
-
     public bool IsHomeRegistered(string sceneName) {
         return maps.Exists(map => map.sceneName == sceneName && map.mapType == 0);
     }
