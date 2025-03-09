@@ -16,6 +16,7 @@ namespace NGA
         public FGTimeSystem timeSys;
         public FGBank bank;
         public FGFactionStance factionStance;
+        public FGContractEventsRecorder eventsRecorder;
         public bool causedInTransitioningLevels = false;
         public string lastTransitionedToSceneName = "";
         public FGState saveState { get; private set; }
@@ -46,6 +47,7 @@ namespace NGA
             MapContainer = new FGMapsContainer();
             bank = new FGBank();
             factionStance = new FGFactionStance();
+            eventsRecorder = new FGContractEventsRecorder();
             
             // Add event callbacks.
             SceneManager.sceneLoaded += OnSceneLoaded;
@@ -136,6 +138,12 @@ namespace NGA
                 return;
             }
 
+            // Checks if active contracts completed. Constraints checkers know to ignore
+            // if no contracts had relevant info updated.
+            // Implicitly checks that traveling between scenes is safe (through travel area).
+            contractMan.CheckContractCompletionOnAreaExit();
+            eventsRecorder.WipeSession();
+
             // Loads next level.
             causedInTransitioningLevels = true;
             SteamVR_LoadLevel.Begin(goto_scene, false, 0.5f, 0f, 0f, 0f, 1f);
@@ -166,6 +174,8 @@ namespace NGA
             PrepareAndSave();
             // If scene transitioned due to FreeGriller.
             if (causedInTransitioningLevels) {
+                eventsRecorder.StartSession();
+                eventsRecorder.OnEventRegistered += contractMan.EvaluateAndUpdateActiveContractsOnEvent;
                 // Calls map loader depending on type of map.
                 if (saveState.IsValidArea(scene.name)) {
                     if (contractForTransition == null) {
@@ -198,21 +208,21 @@ namespace NGA
             }
             // Saves QB state or home scene if we're traveling from Home or Area which we arrived at
             // through FG_GM.
-            bool comingFromHomeProper = lastTransitionedToSceneName == currSceneName;
-            if (comingFromHomeProper
-                    && saveState.IsValidHome(lastTransitionedToSceneName)) {
-                SaveHomeSceneConfigToFile(currSceneName);
-                SavePlayerQuickbetToFile();
-            } else if (comingFromHomeProper && saveState.IsValidArea(lastTransitionedToSceneName)) {
-                // TODO: Find place where we updated valid areas / homes?
-                SavePlayerQuickbetToFile();
+            bool comingFromFGTraveledPlace = lastTransitionedToSceneName == currSceneName;
+            if (comingFromFGTraveledPlace) {
+                eventsRecorder.OnEventRegistered -= contractMan.EvaluateAndUpdateActiveContractsOnEvent;
+                if (saveState.IsValidHome(lastTransitionedToSceneName)) {
+                    SaveHomeSceneConfigToFile(currSceneName);
+                    SavePlayerQuickbetToFile();
+                } else if (saveState.IsValidArea(lastTransitionedToSceneName)) {
+                    SavePlayerQuickbetToFile();
+                } else {
+                    Debug.LogError("We're transitioning from an FG traveled-to scene that's neither area nor home: " + currSceneName);
+                }
             } else {
-                Debug.LogWarning("We're not transitioning from a traveled-to home: " + currSceneName);
+                Debug.LogWarning("We're not transitioning from an FG traveled-to scene: " + currSceneName);
             }
         }
-
-        private void Update()
-        {}
 
         private void QUIT() {
             if (saveState.IsValidHome(lastTransitionedToSceneName)) {

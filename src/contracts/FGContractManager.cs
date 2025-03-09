@@ -11,10 +11,12 @@ public class FGContractManager : MonoBehaviour
     public static FGContractManager Instance;
     private List<FGContract> activeContracts = new List<FGContract>();
     private List<FGContract> availableContracts = new List<FGContract>();
+    private List<FGContract> completedContracts = new List<FGContract>();
 
     public struct Config {
         public List<FGContract> activeContracts;
         public List<FGContract> availableContracts;
+        public List<FGContract> completedContracts;
     }
 
     private void Awake()
@@ -28,35 +30,43 @@ public class FGContractManager : MonoBehaviour
         // Ensure activeContracts and availableContracts are not null
         if (config.activeContracts == null) {
             Debug.LogWarning("activeContracts is null, initializing as empty list.");
-            config.activeContracts = new List<FGContract>(); // Initialize as empty list
+            config.activeContracts = new List<FGContract>();
         }
-        
         if (config.availableContracts == null) {
             Debug.LogWarning("availableContracts is null, initializing as empty list.");
-            config.availableContracts = new List<FGContract>(); // Initialize as empty list
+            config.availableContracts = new List<FGContract>();
         }
-
-        // Assign the lists to the class variables
+        if (config.completedContracts == null) {
+            Debug.LogWarning("completedContracts is null, initializing as empty list.");
+            config.completedContracts = new List<FGContract>();
+        }
         activeContracts = config.activeContracts;
         availableContracts = config.availableContracts;
+        completedContracts = config.completedContracts;
 
-        // Prepare contracts in activeContracts list
-        foreach (var c in activeContracts)
+        // Prepare contracts from load.
+        foreach (var contract in activeContracts)
         {
-            if (c != null) {
-                c.PrepareFromLoad();
+            if (contract != null) {
+                contract.PrepareFromLoad();
             } else {
                 Debug.LogWarning("Found null contract in activeContracts list.");
             }
         }
-
-        // Prepare contracts in availableContracts list
-        foreach (var c in availableContracts)
+        foreach (var contract in availableContracts)
         {
-            if (c != null) {
-                c.PrepareFromLoad();
+            if (contract != null) {
+                contract.PrepareFromLoad();
             } else {
                 Debug.LogWarning("Found null contract in availableContracts list.");
+            }
+        }
+        foreach (var contract in completedContracts)
+        {
+            if (contract != null) {
+                contract.PrepareFromLoad();
+            } else {
+                Debug.LogWarning("Found null contract in completedContracts list.");
             }
         }
     }
@@ -68,9 +78,13 @@ public class FGContractManager : MonoBehaviour
         foreach (var c in availableContracts) {
             c.PrepareForSave();
         }
+        foreach (var c in completedContracts) {
+            c.PrepareForSave();
+        }
         return new Config {
             activeContracts = activeContracts,
             availableContracts = availableContracts,
+            completedContracts = completedContracts
         };
     }
 
@@ -83,14 +97,11 @@ public class FGContractManager : MonoBehaviour
     }
 
     void Start () {
-        FGContractTemplateFactory.RegisterDefaultContractTemplates();
+        // Default contract templates loaded through FGExternalLoader.
     }
 
     private void OnEnable()
     {
-        // TODO: Depending on if we want it to run in background, this should be
-        // linked to start signal from FG_GM.
-
         // Subscribe to the GameTimeManager event when this script is enabled
         FGTimeSystem.Instance.OnTimeAdvanced += CheckContractExpirations;
         FGTimeSystem.Instance.OnTimeAdvanced += MaybeAddNewContract;
@@ -106,14 +117,13 @@ public class FGContractManager : MonoBehaviour
     // You can still call this method to generate new contracts
     private void GenerateContract(string factionID, float forPlayerReputation)
     {
-        FGContractTemplate template = FGContractTemplateFactory.GetTemplateForFactionAndReputation(factionID, forPlayerReputation);
-
+        FGContractTemplate template = 
+            FGContractTemplateFactory.GetTemplateForFactionAndReputation(factionID, forPlayerReputation);
         if (template == null)
         {
             Debug.LogWarning($"No contract template found for faction {factionID} with reputation {forPlayerReputation}");
             return;
         }
-        
 
         FGContract newContract = template.GenerateContract();
         if (newContract == null)
@@ -123,7 +133,6 @@ public class FGContractManager : MonoBehaviour
         }
         // TODO: Add an events system to notify when new contract added.
         availableContracts.Add(newContract);
-
         Debug.Log($"Generated contract from template: {newContract.DisplayName} for faction {newContract.HiringFactionID}");
     }
 
@@ -134,8 +143,8 @@ public class FGContractManager : MonoBehaviour
 
         if (contractToAccept != null)
         {
-            availableContracts.Remove(contractToAccept);
             activeContracts.Add(contractToAccept);
+            availableContracts.Remove(contractToAccept);
             Debug.Log($"Contract with ID {uniqueID} has been accepted.");
         }
         else
@@ -151,26 +160,46 @@ public class FGContractManager : MonoBehaviour
             if (IsContractExpired(activeContracts[i]))
             {
                 Debug.Log($"Contract expired: {activeContracts[i].DisplayName}");
+                AddToCompletedContracts(activeContracts[i]);
                 activeContracts.RemoveAt(i);
                 // TOOD: Add an events system for new contract expired so Notifiaction class knows.
+            }
+        }
+        for (int i = availableContracts.Count - 1; i >= 0; i--)
+        {
+            if (IsContractExpired(availableContracts[i]))
+            {
+                Debug.Log($"Contract expired: {availableContracts[i].DisplayName}");
+                availableContracts.RemoveAt(i);
             }
         }
     }
 
     private void MaybeAddNewContract(DateTime currentTime) {
         // TODO: Beware magic number.
-        if (activeContracts.Count >= 3) {
+        if (availableContracts.Count >= 3) {
             return;
         }
         GenerateNewContract();
+    }
+
+    private void AddToCompletedContracts(FGContract contract)
+    {
+        // Appends to the front of the list. Always maintain max 5 completed contracts, removing oldest.
+        completedContracts.Insert(0, contract);
+        int maxCompletedContracts = 10;
+        while (completedContracts.Count > maxCompletedContracts)
+        {
+            completedContracts.RemoveAt(maxCompletedContracts);
+        }
     }
     
     private bool IsContractExpired(FGContract contract)
     {
         DateTime inGameTime = FGTimeSystem.Instance.CurrentTime;
         DateTime contractExpirationTime = contract.ExpirationDateTime;
-
-        return inGameTime >= contractExpirationTime; // Expired if current time is past or equal to expiration
+        // Expired if current time is past or equal to expiration
+        return inGameTime >= contractExpirationTime;
     }
 
     private void GenerateNewContract()
@@ -180,59 +209,106 @@ public class FGContractManager : MonoBehaviour
         GenerateContract("Hollys", /*reputation=*/0.0f);
     }
 
-    // TODO
-    private void CheckContractsForCompletion()
-    {
-        ContractEvaluationContext context = new ContractEvaluationContext(); // TODO Build it.
-        for (int i = activeContracts.Count - 1; i >= 0; i--)
+    // NOTE: contracts only marked as completed/failed when changing scenes.
+    public void EvaluateAndUpdateActiveContractsOnEvent(FGContractEvent contractEvent) {
+        ContractEvaluationContext context = new ContractEvaluationContext();
+        context.eventsInSession = FG_GM.Instance.eventsRecorder.CurrentSessionEvents;
+        for (int contractIx = activeContracts.Count - 1; contractIx >= 0; contractIx--)
         {
-            // TODO: Perhaps only contracts from valid map being extracted from should be checked
-            // it would stop us from having a more generic quest design.
-            FGContract contract = activeContracts[i];
+            FGContract contract = activeContracts[contractIx];
             context.myContract = contract;
-            bool contractCompleted = true;
-            int totalReward = 0;
-
-            foreach (var constraintData in contract.ConstraintsAndRewards)
+            for (int constraintIx = 0; constraintIx < contract.ConstraintsAndRewards.Count; constraintIx++)
             {
-                IContractConstraint constraint = ConstraintFactory.GetConstraint(constraintData.ConstraintID);
-
-                if (constraint == null)
+                var constraintData = contract.ConstraintsAndRewards[constraintIx];
+                IContractConstraint constraintChecker = 
+                    ConstraintFactory.GetConstraint(constraintData.ConstraintID);
+                if (constraintChecker == null)
                 {
                     Debug.LogWarning($"Constraint {constraintData.ConstraintID} not found.");
                     continue;
                 }
 
-                bool success = constraint.IsSatisfied(context);
-                contract.ConstraintsAndRewards[i] = new FGContract.ConstraintAndReward
-                {
-                    ConstraintID = constraintData.ConstraintID,
-                    constraintSuccess = success,
-                    constraintViolated = !success,
-                    rewardAddedIfSucceed = constraintData.rewardAddedIfSucceed,
-                    rewardSubtractedIfFail = constraintData.rewardSubtractedIfFail
-                };
+                constraintChecker.EvaluateAndUpdateContract(context);
+            }
+        }
+    }
 
-                if (success)
+
+    public void CheckContractCompletionOnAreaExit()
+    {
+        ContractEvaluationContext context = new ContractEvaluationContext();
+        context.eventsInSession = FG_GM.Instance.eventsRecorder.CurrentSessionEvents;
+        for (int contractIx = activeContracts.Count - 1; contractIx >= 0; contractIx--)
+        {
+            FGContract contract = activeContracts[contractIx];
+            context.myContract = contract;
+            bool contractCompleted = false;
+            bool contractFailed = false;
+            int numMandatoryConstraints = contract.ConstraintsAndRewards.Count(c => c.optional == false);
+            int numMetMandatoryConstraints = 0;
+            int totalReward = 0;
+
+            for (int constraintIx = 0; constraintIx < contract.ConstraintsAndRewards.Count; constraintIx++)
+            {
+                var constraintData = contract.ConstraintsAndRewards[constraintIx];
+                IContractConstraint constraintChecker = 
+                    ConstraintFactory.GetConstraint(constraintData.ConstraintID);
+                if (constraintChecker == null)
+                {
+                    Debug.LogWarning($"Constraint {constraintData.ConstraintID} not found.");
+                    continue;
+                }
+
+                constraintChecker.EvaluateAndUpdateContract(context);
+                var updatedConstarintData = contract.ConstraintsAndRewards[constraintIx];
+                if (updatedConstarintData.constraintSuccess)
                 {
                     totalReward += constraintData.rewardAddedIfSucceed;
+                    if (constraintData.optional == false)
+                    {
+                        numMetMandatoryConstraints++;
+                    }
                 }
-                else
+                else if (updatedConstarintData.constraintViolated)
                 {
+                    // NOTE: It's possible for a contract to not have anything relevant to evaluate,
+                    // thus not a failure nor success.
                     totalReward -= constraintData.rewardSubtractedIfFail;
-                    // TODO: Contract should be completed on fail or win of killalltargets constraint.
-                    // Likely from the new optional value thing
-                    contractCompleted = false;
+                    if (updatedConstarintData.optional == false)
+                    {
+                        Debug.LogWarning($"Contract '{contract.DisplayName}' failed due to constraint {constraintData.ConstraintID}");
+                        contractFailed = true;
+                        break;
+                    }
                 }
+            }
+            if (numMetMandatoryConstraints < numMandatoryConstraints)
+            {
+                contractFailed = true;
+            } else {
+                contractCompleted = true;
+            }
+            if (totalReward < 0)
+            {
+                totalReward = 0;
             }
 
             if (contractCompleted)
             {
-                // TODO: Payment boy
-                // TODO: Pay no less than 0?
-                // Reputation boy
-                Debug.Log($"Contract '{contract.DisplayName}' completed! Total reward: {totalReward}");
-                activeContracts.RemoveAt(i);
+                // Pay the player, always at least 0.
+                FG_GM.Instance.bank.IncrementPlyBalance(totalReward);
+                // Award all ReputationRewards in the contract.
+                foreach (var repReward in contract.ReputationRewards)
+                {
+                    FG_GM.Instance.factionStance.TryAdjustReputation(repReward.FactionID, repReward.Rep);
+                }
+                Debug.Log($"Contract '{contract.uniqueID}' completed! Total reward: {totalReward}");
+                AddToCompletedContracts(contract);
+                activeContracts.RemoveAt(contractIx);
+            } else if (contractFailed)
+            {
+                AddToCompletedContracts(contract);
+                activeContracts.RemoveAt(contractIx);
             }
         }
     }

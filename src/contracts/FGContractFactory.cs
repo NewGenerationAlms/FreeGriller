@@ -256,17 +256,8 @@ public class FGContractTemplate
             constraints.AddRange(PossibleConstraints.OrderBy(_ => UnityEngine.Random.value)
                                                     .Take(Mathf.Min(maxConstraints, PossibleConstraints.Count)));
         }
-
-        // Ensure "GrillAllTargets" is included
-        if (!constraints.Any(c => c.ConstraintID == "GrillAllTargets"))
-        {
-            constraints.Add(new FGContract.ConstraintAndReward
-            {
-                ConstraintID = "GrillAllTargets",
-                rewardAddedIfSucceed = 0,
-                rewardSubtractedIfFail = 999999
-            });
-        }
+        // Template maker is in charge of making sure GrillAllTargets is included. This will help in future
+        // if we want to add non-kill quests.
 
         return constraints;
     }

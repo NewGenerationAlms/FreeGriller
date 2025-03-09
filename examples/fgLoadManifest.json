@@ -73,6 +73,12 @@
             "optional": false,
             "rewardAddedIfSucceed": 50,
             "rewardSubtractedIfFail": 50
+          },
+          {
+            "ConstraintID": "GrillAllTargets",
+            "optional": false,
+            "rewardAddedIfSucceed": 0,
+            "rewardSubtractedIfFail": -999
           }
         ],
         "RepRewards": [
@@ -83,6 +89,58 @@
           {
             "FactionID": "Buddys",
             "Rep": -0.8
+          }
+        ]
+      },
+      {
+        "TemplateID": "Hollys_HighRep",
+        "HiringFactionID": "Hollys",
+        "ReputationRequirements": [
+          {
+            "FactionID": "Hollys",
+            "MaximumRep": 50.0,
+            "MinimumRep": 10.1
+          }
+        ],
+        "Infraction": "Did Something worse",
+        "MinGuards": 1,
+        "MaxGuards": 5,
+        "PossibleGuardTypes": [100],
+        "PossibleGuardFactionIDs": ["Buddys"],
+        "MinTargets": 1,
+        "MaxTargets": 1,
+        "PossibleTargetTypes": [3020],
+        "PossibleTargetFactionIDs": ["Buddys"],
+        "MinExtras": 0,
+        "MaxExtras": 0,
+        "PossibleExtraTypes": [],
+        "PossibleScenes": ["Grillhouse_2Story"],
+        "PossibleSceneCivConfigs": ["default_civ"],
+        "PossibleSceneEnemConfigs": ["default_enemy"],
+        "MinCompensation": 2250,
+        "MaxCompensation": 2750,
+        "PossibleConstraints": [
+          {
+            "ConstraintID": "GrillViaProjectile",
+            "optional": true,
+            "rewardAddedIfSucceed": 200,
+            "rewardSubtractedIfFail": 200
+          },
+          {
+            "ConstraintID": "GrillAllTargets",
+            "optional": false,
+            "rewardAddedIfSucceed": 0,
+            "rewardSubtractedIfFail": -9999
+          }
+        ],
+        "RepRewards": [
+          {
+            "FactionID": "Hollys",
+            "Rep": 0.8
+          },
+          {
+            "FactionID": "Buddys",
+            "Rep": -1.0
           }
         ]
       }
