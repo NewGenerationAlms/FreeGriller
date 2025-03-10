@@ -209,7 +209,7 @@ public class FGContractManager : MonoBehaviour
         GenerateContract("Hollys", /*reputation=*/0.0f);
     }
 
-    // NOTE: contracts only marked as completed/failed when changing scenes.
+    // NOTE: Contracts only marked as completed/failed when changing scenes.
     public void EvaluateAndUpdateActiveContractsOnEvent(FGContractEvent contractEvent) {
         ContractEvaluationContext context = new ContractEvaluationContext();
         context.eventsInSession = FG_GM.Instance.eventsRecorder.CurrentSessionEvents;
@@ -242,6 +242,7 @@ public class FGContractManager : MonoBehaviour
         {
             FGContract contract = activeContracts[contractIx];
             context.myContract = contract;
+            context.isFinalCheck = true;
             bool contractCompleted = false;
             bool contractFailed = false;
             int numMandatoryConstraints = contract.ConstraintsAndRewards.Count(c => c.optional == false);
@@ -260,8 +261,8 @@ public class FGContractManager : MonoBehaviour
                 }
 
                 constraintChecker.EvaluateAndUpdateContract(context);
-                var updatedConstarintData = contract.ConstraintsAndRewards[constraintIx];
-                if (updatedConstarintData.constraintSuccess)
+                var updatedConstraintData = contract.ConstraintsAndRewards[constraintIx];
+                if (updatedConstraintData.constraintSuccess)
                 {
                     totalReward += constraintData.rewardAddedIfSucceed;
                     if (constraintData.optional == false)
@@ -269,17 +270,24 @@ public class FGContractManager : MonoBehaviour
                         numMetMandatoryConstraints++;
                     }
                 }
-                else if (updatedConstarintData.constraintViolated)
+                else if (updatedConstraintData.constraintViolated)
                 {
                     // NOTE: It's possible for a contract to not have anything relevant to evaluate,
                     // thus not a failure nor success.
                     totalReward -= constraintData.rewardSubtractedIfFail;
-                    if (updatedConstarintData.optional == false)
+                    if (updatedConstraintData.optional == false)
                     {
                         Debug.LogWarning($"Contract '{contract.DisplayName}' failed due to constraint {constraintData.ConstraintID}");
                         contractFailed = true;
                         break;
                     }
+                } else if (ConstraintFactory.IsContractInAnyPosse(contract) 
+                            && updatedConstraintData.optional == false)
+                {
+                    // Mandatory constraint not met upon contract completion when it could've
+                    // been completed.
+                    contractFailed = true;
+                    break;
                 }
             }
             if (numMetMandatoryConstraints < numMandatoryConstraints)

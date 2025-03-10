@@ -10,14 +10,14 @@ namespace NGA {
 public class FGTargetPosse : MonoBehaviour
 {
     // TODO: Populate fields from the contract.
-    public FGContract contract; // Active contract
+    public FGContract contract { get; private set; } // Active contract
     public List<PosseConfig> TargetConfigs = new List<PosseConfig>(); // All configurations
 
-    private PosseConfig selectedPosseConfig; // The currently active config
+    public PosseConfig selectedPosseConfig { get; private set; } // The currently active config
 
-    private List<FGTrackedSosig> trackedTargets = new List<FGTrackedSosig>();
-    private List<FGTrackedSosig> trackedGuards = new List<FGTrackedSosig>();
-    private List<FGTrackedSosig> trackedExtras = new List<FGTrackedSosig>();
+    public List<FGTrackedSosig> trackedTargets { get; private set; } = new List<FGTrackedSosig>();
+    public List<FGTrackedSosig> trackedGuards { get; private set; } = new List<FGTrackedSosig>();
+    public List<FGTrackedSosig> trackedExtras { get; private set; } = new List<FGTrackedSosig>();
 
     // A configuration of Sosigs, separated into roles.
     [System.Serializable]

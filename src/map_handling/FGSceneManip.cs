@@ -12,7 +12,7 @@ using System.Linq;
 
 namespace NGA {
 public class FGSceneManip : MonoBehaviour {
-
+	public List<FGTargetPosse> TargetPosses { get; private set; } = new List<FGTargetPosse>();
 
 	void Start () {
 	}
@@ -20,8 +20,13 @@ public class FGSceneManip : MonoBehaviour {
 	void Update () {
 	}
 
+	public void ResetFGSceneManip() {
+		TargetPosses.Clear();
+	}
+
 	// Loads the base home scene config if one exists. If none, it clears the scene either way.
 	public bool InitHome(string saveSlotName, string sceneName) {
+		ResetFGSceneManip();
 		if (GM.IsAsyncLoading) {
 			Debug.LogWarning("Waiting InitHome, IsAsyncLoading aka vault loading.");
 			return false;
@@ -46,6 +51,7 @@ public class FGSceneManip : MonoBehaviour {
 	}
 
 	public bool InitArea(string saveSlotName, string sceneName) {
+		ResetFGSceneManip();
 		if (GM.IsAsyncLoading) {
 			Debug.LogWarning("Waiting InitArea, IsAsyncLoading aka vault loading.");
 			return false;
@@ -77,6 +83,7 @@ public class FGSceneManip : MonoBehaviour {
 	}
 
 	public bool InitAreaFromContract(string saveSlotName, FGContract contract) {
+		ResetFGSceneManip();
 		if (GM.IsAsyncLoading) {
 			Debug.LogWarning("Waiting InitArea, IsAsyncLoading aka vault loading.");
 			return false;
@@ -167,7 +174,9 @@ public class FGSceneManip : MonoBehaviour {
             selectedPosse.SetContract(contract);
         }
         selectedPosse.SelectAndSpawnPosseConfig();
+		TargetPosses.Add(selectedPosse);
 	}
 
+		
 }
 } // namespace NGA
