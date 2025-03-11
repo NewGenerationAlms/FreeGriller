@@ -70,8 +70,21 @@ namespace NGA {
         }
 
         public bool IsFactionHostileTowardsPly(string factionId) {
-            // Implement logic to determine if a faction is hostile towards the player
-            return false;
+            // TODO: Determine if a faction is hostile towards the player. Unused rn.
+            return true;
+        }
+
+        public string PrintFactionStance() {
+            var result = new System.Text.StringBuilder();
+            foreach (var faction in factions) {
+                result.AppendLine($"<b>Faction ID:</b> {faction.FactionId}");
+                result.AppendLine($"<b>Current Reputation:</b> {faction.currentReputation}");
+                result.AppendLine($"<b>Max Reputation:</b> {faction.maxPossibleReputation}");
+                result.AppendLine($"<b>Min Reputation:</b> {faction.minPossibleReputation}");
+                result.AppendLine($"<b>Always Hostile Towards:</b> {string.Join(", ", faction.AlwaysHostileTowardsFactionIds.ToArray())}");
+                result.AppendLine("---------------------------");
+            }
+            return result.ToString();
         }
     }
 

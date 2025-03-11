@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -18,7 +19,9 @@ public class FGTimeUi2 : MonoBehaviour {
     {
         if (NGA.FGTimeSystem.Instance != null && timeText != null)
         {
-            timeText.text = NGA.FGTimeSystem.Instance.CurrentTime.ToString("o");
+            DateTime utcTime = NGA.FGTimeSystem.Instance.CurrentTime;
+            DateTime localTime = utcTime.ToLocalTime();
+            timeText.text = localTime.ToString("MM/dd/yy HH:mm:ss");
         }
     }
 

@@ -106,11 +106,16 @@ public class FGContract
         sb.AppendLine($"Hiring Faction: {HiringFactionID}");
         sb.AppendLine($"Target: {TargetFirstName} {TargetLastName}");
         sb.AppendLine($"Infraction: {Infraction}");
-        
-        if (ExpirationDateTime > DateTime.Now)
-            sb.AppendLine($"Expires: {ExpirationDateTime:G}");
+        sb.AppendLine($"Scene: {SceneName}");
 
-        sb.AppendLine($"Compensation: ${Compensation}");
+        DateTime inGameTime = FGTimeSystem.Instance.CurrentTime;
+        if (ExpirationDateTime > inGameTime)
+        {
+            var realTimeLeft = FGTimeSystem.Instance.CalculateRealTimeUntil(inGameTime, ExpirationDateTime);
+            sb.AppendLine($"Time until expiration: {realTimeLeft.Hours}h {realTimeLeft.Minutes}m {realTimeLeft.Seconds}s");
+        }
+
+        sb.AppendLine($"Compensation: ${Compensation:N0}");
 
         if (ReputationRequirements != null && ReputationRequirements.Count > 0)
         {

@@ -26,6 +26,8 @@ public class FGWristUi2 : MonoBehaviour {
 	private Transform ContractsVertList;
 	private Transform ContractStickerTempl;
 	private Transform TimeTab; // Ix 2
+	private Transform BankTab; // Ix 3
+	private Transform RepTab; // Ix 4
 
 	public void Start() {
 		SetHandsAndFace(GM.CurrentPlayerBody.RightHand.GetComponent<FVRViveHand>(), 
@@ -49,6 +51,8 @@ public class FGWristUi2 : MonoBehaviour {
 		TravelTab = Canvas.Find("TravelTab");
 		ContractsTab = Canvas.Find("ContractsTab");
 		TimeTab = Canvas.Find("TimeTab");
+		BankTab = Canvas.Find("BankTab");
+		RepTab = Canvas.Find("RepTab");
 
 		// Bits.
 		TimeText = Canvas.Find("Time");
@@ -63,6 +67,8 @@ public class FGWristUi2 : MonoBehaviour {
         TravelTab.gameObject.SetActive(false);
 		ContractsTab.gameObject.SetActive(false);
 		TimeTab.gameObject.SetActive(false);
+		BankTab.gameObject.SetActive(false);
+		RepTab.gameObject.SetActive(false);
     }
 	public void ClearContractTexts() {
 		// TODO: Do for all in vertical list
@@ -86,6 +92,9 @@ public class FGWristUi2 : MonoBehaviour {
 			case 1:
 				tabname = "[Active]";
 				break;
+			case 2:
+				tabname = "[Finished]";
+				break;
 			default:
 				tabname = "";
 				break;
@@ -96,7 +105,7 @@ public class FGWristUi2 : MonoBehaviour {
 									+ fGContract.TargetFirstName + " " + fGContract.TargetLastName + "\n"
 									+ fGContract.Infraction + "\n"
 									+ tabname;
-			break; // TODO: Do all verticals
+			break; // TODO: Do all verticals list
 		}
 		selectedQuestIndex = contracts.Count == 0 ? -1 : 0; // Default to select first
 		BTN_DisplayQuestDetail();		
@@ -124,6 +133,9 @@ public class FGWristUi2 : MonoBehaviour {
 			case 1:
 				contracts = FG_GM.Instance.contractMan.GetActiveContracts();
 				break;
+			case 2:
+				contracts = FG_GM.Instance.contractMan.GetCompletedContracts();
+				break;
 			default:
 				contracts = new List<FGContract>();
 				break;
@@ -146,6 +158,46 @@ public class FGWristUi2 : MonoBehaviour {
 		BTN_DisplayQuests(currQuestTabType);
 		Debug.LogWarning("Allegedly accepted quest.");
 	}
+	public void BTN_RejectContract() {
+		if (selectedQuestIndex < 0 || currQuestTabType != 1) {
+			Debug.LogWarning("Selected index is invalid " + selectedQuestIndex
+							+ " or you didn't select Active tab " + currQuestTabType);
+			return;
+		}
+		List<FGContract> contracts = GetCurrentContractList();
+		if (selectedQuestIndex >= contracts.Count) {
+			Debug.LogWarning("Selected index is invalid too big " + selectedQuestIndex
+							+ " compared to active contracts list " + contracts.Count);
+			return;
+		}
+		FG_GM.Instance.contractMan.RejectContract(contracts[selectedQuestIndex].uniqueID);
+		BTN_DisplayQuests(currQuestTabType);
+		Debug.LogWarning("Allegedly rejected quest.");
+	}
+	public void BTN_TravelToContractLevel() {
+		if (selectedQuestIndex < 0 || currQuestTabType != 1) {
+			Debug.LogWarning("Selected index is invalid " + selectedQuestIndex
+							+ " or you didn't select Active tab " + currQuestTabType);
+			return;
+		}
+		List<FGContract> contracts = GetCurrentContractList();
+		if (selectedQuestIndex >= contracts.Count) {
+			Debug.LogWarning("Selected index is invalid too big " + selectedQuestIndex
+							+ " compared to active contracts list " + contracts.Count);
+			return;
+		}
+		FG_GM.Instance.TransitionToLevelFromContract(contracts[selectedQuestIndex]);
+	}
+	public void BTN_RefreshBankInfo() {
+		BankTab.Find("Description")
+			.GetComponentInChildren<Text>().text 
+			= FG_GM.Instance.bank.PrintPlyBankInfo();
+	}
+	public void BTN_RefreshRepInfo() {
+		RepTab.Find("Description")
+			.GetComponentInChildren<Text>().text 
+			= FG_GM.Instance.factionStance.PrintFactionStance();
+	}
 
 	public void BTN_OpenTab(int index) {
 		CloseTabs();
@@ -159,6 +211,14 @@ public class FGWristUi2 : MonoBehaviour {
 				break;
 			case 2:
 				TimeTab.gameObject.SetActive(true);
+				break;
+			case 3:
+				BankTab.gameObject.SetActive(true);
+				BTN_RefreshBankInfo();
+				break;
+			case 4:
+				RepTab.gameObject.SetActive(true);
+				BTN_RefreshRepInfo();
 				break;
 			default:
 				Debug.LogError("Selected tab not supported: " + index);

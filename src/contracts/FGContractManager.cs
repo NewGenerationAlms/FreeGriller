@@ -96,6 +96,10 @@ public class FGContractManager : MonoBehaviour
         return availableContracts;
     }
 
+    public List<FGContract> GetCompletedContracts() {
+        return completedContracts;
+    }
+
     void Start () {
         // Default contract templates loaded through FGExternalLoader.
     }
@@ -149,6 +153,16 @@ public class FGContractManager : MonoBehaviour
         }
         else
         {
+            Debug.LogWarning($"No contract found with uniqueID {uniqueID}.");
+        }
+    }
+
+    public void RejectContract(int uniqueID) {
+        FGContract contractToReject = activeContracts.FirstOrDefault(c => c.uniqueID == uniqueID);
+        if (contractToReject != null) {
+            activeContracts.Remove(contractToReject);
+            Debug.Log($"Contract with ID {uniqueID} has been rejected.");
+        } else {
             Debug.LogWarning($"No contract found with uniqueID {uniqueID}.");
         }
     }
@@ -304,7 +318,8 @@ public class FGContractManager : MonoBehaviour
             if (contractCompleted)
             {
                 // Pay the player, always at least 0.
-                FG_GM.Instance.bank.IncrementPlyBalance(totalReward);
+                var transaction = new FGBank.TransactionRecord(totalReward, contract.DisplayName);
+                FG_GM.Instance.bank.ProcessTransaction(transaction, false);
                 // Award all ReputationRewards in the contract.
                 foreach (var repReward in contract.ReputationRewards)
                 {

@@ -13,7 +13,7 @@ public class FGTimeSystem : MonoBehaviour
     public event Action<DateTime> OnHourPassed;   // Called when a full hour has passed
 
     public float timeMultiplier { get; set; } = 24f;  
-    public DateTime CurrentTime { get; private set; } = new DateTime(2024, 1, 1, 0, 0, 0);  
+    public DateTime CurrentTime { get; private set; } = DateTime.Now;  
 
     private float realTimeElapsed = 0f;
     private int lastReportedHour; // Tracks last hour to detect hourly changes
@@ -70,7 +70,7 @@ public class FGTimeSystem : MonoBehaviour
         return inGameNow.AddSeconds(inGameSeconds);
     }
 
-
+    // Inputs are both in-game times. Returns the real-world time until the target time.
     public TimeSpan CalculateRealTimeUntil(DateTime startTime, DateTime targetTime)
     {
         if (targetTime <= startTime)
@@ -80,7 +80,7 @@ public class FGTimeSystem : MonoBehaviour
         double realSeconds = inGameSeconds / timeMultiplier; // Convert to real-world seconds
 
         return TimeSpan.FromSeconds(realSeconds); // Convert to a TimeSpan for easy formatting
-    } // $"Real-world time until contract expires: {realTimeLeft.Hours}h {realTimeLeft.Minutes}m {realTimeLeft.Seconds}s"
+    }
 
     // ---- SAVE & LOAD SYSTEM ----\
     public void InitFromConfig(Config config) {
