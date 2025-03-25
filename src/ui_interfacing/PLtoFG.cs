@@ -19,32 +19,41 @@ public class PLtoFG
             Debug.LogWarning("No NpcSpawnPt objects found in the scene.");
             return true; // exit
         }
-        List<NpcSpawnPt> genericList = new List<NpcSpawnPt>();
+        List<NpcSpawnPt> genericPtList = new List<NpcSpawnPt>();
+        List<NpcSpawnPt> mySpawnedPtList = new List<NpcSpawnPt>();
         FGTargetPosse.PosseConfig posseConfig = new FGTargetPosse.PosseConfig();
         
         foreach (var npcPt in allNpcPts) {
             if (string.IsNullOrEmpty(npcPt.tagId)) {
-                genericList.Add(npcPt);
+                genericPtList.Add(npcPt);
             } else {
                 switch (npcPt.tagId.ToLower()) {
                     case "extra":
                         posseConfig.Extras.Add(CreateSosigMandate(npcPt, false, false, true));
+                        mySpawnedPtList.Add(npcPt);
                         break;
                     case "target":
                         posseConfig.Targets.Add(CreateSosigMandate(npcPt, true, false, false));
+                        mySpawnedPtList.Add(npcPt);
                         break;
                     case "guard":
                         posseConfig.Guards.Add(CreateSosigMandate(npcPt, false, true, false));
+                        mySpawnedPtList.Add(npcPt);
                         break;
                     default:
-                        genericList.Add(npcPt);
+                        genericPtList.Add(npcPt);
                         break;
                 }
             }
         }
 
-        foreach(var genericNpc in genericList) {
+        // Set all non-target posse NpcSpawnPts to spawn.
+        foreach(var genericNpc in genericPtList) {
             genericNpc.setActive(true);
+        }
+        // Hide the spawned npc points.
+        foreach(var spawnedNpc in mySpawnedPtList) {
+            spawnedNpc.gameObject.SetActive(false);
         }
 
         GameObject posseObject = new GameObject("FGTargetPosse");

@@ -51,7 +51,6 @@ namespace NGA
             
             // Add event callbacks.
             SceneManager.sceneLoaded += OnSceneLoaded;
-            SteamVR_Events.Loading.Listen(OnSceneChangeRequested);
             
             Init();
             FGExternalLoader.LoadManifestsFromBepinex(); // Load after init so new templates/factions are added.
@@ -61,21 +60,11 @@ namespace NGA
             StartCoroutine(SpawnWristMenuWithRetries(40, 3f)); // Retry up to 10 times, every 10 seconds
             InitSaveState();
         }
-        private bool SpawnWristMenu() {
-            FVRObject wristUiFvr;
-            if (!IM.OD.TryGetValue(wristUiSpawnId, out wristUiFvr))
-            {
-                Debug.LogError(wristUiSpawnId + " not found in IM.OD!");
-                return false;
-            }
-            GameObject gameObject = UnityEngine.Object.Instantiate<GameObject>(wristUiFvr.GetGameObject(), Vector3.zero, Quaternion.identity);
-            Debug.LogWarning($"{wristUiSpawnId} supposedly spawned");
-            return true;
-        }
         private void InitSaveState() {
             if (saveState == null)
             {
-                if (FGFileIoHandler.LoadFGState(saveSlotName, out FGState loadedState))
+                FGFileIoHandler.LoadFGState(saveSlotName, out FGState loadedState);
+                if (loadedState != null)
                 {
                     saveState = loadedState;
                     InitTimeSysFromSave();
@@ -92,21 +81,37 @@ namespace NGA
             }
         }
         private void InitTimeSysFromSave() {
+            if (saveState == null || string.IsNullOrEmpty(saveState.timeSysConfig)) {
+                Debug.LogError("Save state or time system config is null. Cannot initialize time system.");
+                return;
+            }
             FGTimeSystem.Config result = JsonUtility
                 .FromJson<FGTimeSystem.Config>(saveState.timeSysConfig);
             timeSys.InitFromConfig(result);
         }
         private void InitContractManFromSave() {
+            if (saveState == null || string.IsNullOrEmpty(saveState.contractManConfig)) {
+                Debug.LogError("Save state or contract manager config is null. Cannot initialize contract manager.");
+                return;
+            }
             FGContractManager.Config result = JsonUtility
                 .FromJson<FGContractManager.Config>(saveState.contractManConfig);
             contractMan.InitFromConfig(result);
         }
         private void InitBankFromSave() {
+            if (saveState == null || string.IsNullOrEmpty(saveState.bankConfig)) {
+                Debug.LogError("Save state or bank config is null. Cannot initialize bank.");
+                return;
+            }
             FGBank.Config result = JsonUtility
                 .FromJson<FGBank.Config>(saveState.bankConfig);
             bank.InitFromConfig(result);
         }
         private void InitFactionStanceFromSave() {
+            if (saveState == null || string.IsNullOrEmpty(saveState.factionStanceConfig)) {
+                Debug.LogError("Save state or faction stance config is null. Cannot initialize faction stance.");
+                return;
+            }
             FGFactionStance.Config result = JsonUtility
                 .FromJson<FGFactionStance.Config>(saveState.factionStanceConfig);
             factionStance.InitFromConfig(result);
@@ -138,11 +143,14 @@ namespace NGA
                 return;
             }
 
+            OnSceneChangeRequested(true);
+
             // Checks if active contracts completed. Constraints checkers know to ignore
             // if no contracts had relevant info updated.
             // Implicitly checks that traveling between scenes is safe (through travel area).
             contractMan.CheckContractCompletionOnAreaExit();
             eventsRecorder.WipeSession();
+            eventsRecorder.OnEventRegistered -= contractMan.EvaluateAndUpdateActiveContractsOnEvent;
 
             // Loads next level.
             causedInTransitioningLevels = true;
@@ -210,7 +218,6 @@ namespace NGA
             // through FG_GM.
             bool comingFromFGTraveledPlace = lastTransitionedToSceneName == currSceneName;
             if (comingFromFGTraveledPlace) {
-                eventsRecorder.OnEventRegistered -= contractMan.EvaluateAndUpdateActiveContractsOnEvent;
                 if (saveState.IsValidHome(lastTransitionedToSceneName)) {
                     SaveHomeSceneConfigToFile(currSceneName);
                     SavePlayerQuickbetToFile();
@@ -245,12 +252,17 @@ namespace NGA
         }
         public void SavePlayerQuickbetToFile() {
             VaultFile curQb = new VaultFile();
-            VaultSystem.FindAndScanObjectsInQuickbelt(curQb);
+            if (!VaultSystem.FindAndScanObjectsInQuickbelt(curQb)) {
+                Debug.LogError("Failed to scan player QB during level transition.");
+                return;
+            }
             // Allows empty loadouts to be saved.
             if (!FGFileIoHandler.SavePlayerQuickbelt(saveSlotName, curQb))
             {
-                Debug.LogError("Failed to scan or write player QB durin level transition.");
+                Debug.LogError("Failed to write player QB.");
+                return;
             }
+            Debug.LogWarning("Succeeded saving player QB.");
         }
 
         public static IEnumerator TryWithRetries(Func<bool> retryMethod, int maxRetries, float delay)
@@ -272,6 +284,17 @@ namespace NGA
 
             Debug.LogError($"Operation failed after {maxRetries} attempts.");
         }
+        private bool SpawnWristMenu() {
+            FVRObject wristUiFvr;
+            if (!IM.OD.TryGetValue(wristUiSpawnId, out wristUiFvr))
+            {
+                Debug.LogError(wristUiSpawnId + " not found in IM.OD!");
+                return false;
+            }
+            GameObject gameObject = UnityEngine.Object.Instantiate<GameObject>(wristUiFvr.GetGameObject(), Vector3.zero, Quaternion.identity);
+            Debug.LogWarning($"{wristUiSpawnId} supposedly spawned");
+            return true;
+        }
         private IEnumerator SpawnWristMenuWithRetries(int maxRetries, float delay)
         {
             int attempts = 0;
@@ -280,8 +303,11 @@ namespace NGA
             while (attempts < maxRetries)
             {
                 if (finalCheck) {
-                    FGWristUi2 wristUI = FindObjectOfType<FGWristUi2>();
-                    if (wristUI != null) {
+                    FGWristUi2[] wristUIs = FindObjectsOfType<FGWristUi2>();
+                    if (wristUIs.Length > 0) {
+                        for (int i = 1; i < wristUIs.Length; i++) {
+                            Destroy(wristUIs[i].gameObject); // Destroy additional instances
+                        }
                         Debug.Log($"Wrist menu spawned successfully for sure on attempt {attempts + 1}.");
                         yield break; // Exit coroutine if successful
                     }

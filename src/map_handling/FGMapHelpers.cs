@@ -16,7 +16,7 @@ public class FGSosigManifest
 
     // Public fields (Visible & Editable in Unity Editor)
     public string UniqueId; // Can be use to match to FGContract TargetIDs key in the key-value pair.
-    public int IFF = -1;
+    public int IFF = -3; // -3 is civilian
     public int SosigOrder; // Should correspond to Sosig.SosigOrder enum
     public int EnemyId;    // Should correspond to SosigEnemyID enum. Will be overriden if provided in contract.
     public bool IsTarget;

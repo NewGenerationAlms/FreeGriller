@@ -12,6 +12,7 @@ namespace NGA {
             public List<TransactionRecord> transactions;
         }
 
+        [System.Serializable]
         public class TransactionRecord {
             public int amount;
             public string description;
@@ -78,7 +79,7 @@ namespace NGA {
                 if (transactCount++ >= maxTransactions) {
                     break;
                 }
-                info += $"{transaction.amount:N0} {transaction.description}\n";
+                info += $"${transaction.amount:N0} {transaction.description}\n";
             }
             return info;
         }

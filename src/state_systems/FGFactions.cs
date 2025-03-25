@@ -25,6 +25,10 @@ namespace NGA {
 
         public List<FGFaction> factions = new List<FGFaction>();
 
+        public FGFactionStance() {
+            factions = new List<FGFaction>();
+        }
+
         public void InitFromConfig(Config config) {
             factions = config.Factions;
         }

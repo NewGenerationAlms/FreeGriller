@@ -39,14 +39,14 @@ public class FGSceneManip : MonoBehaviour {
 			Debug.LogError("Loading CGriller Home Scene file failed");
 		} else if (VaultSystem.SpawnVaultFile(sceneFile, base.transform, false,
 																	false, /*clearScene=*/true, out error,
-																	Vector3.zero, null, false)) {
+																	Vector3.zero, null, /*IsAsyncLoading*/true)) {
 			Debug.LogWarning("Scene config loaded for home.");
 		} else {
 			Debug.LogError("Failed to load scene with error: " + error + "\n on " + sceneFile);
 		}
 		// Always loads quickbelt in case player left Home to non FG with stuff on them.
 		GM.CurrentMovementManager.TeleportToPoint(GM.CurrentSceneSettings.DeathResetPoint.position, false);
-		SpawnPlayerQb(saveSlotName);
+		SpawnPlayerQbWithRetry(saveSlotName);
 		return true;
 	}
 
@@ -58,6 +58,7 @@ public class FGSceneManip : MonoBehaviour {
 		}
 
 		// Loads default scene vault file if it exists, otherwise loads scene as is.
+		VaultSystem.ClearExistingSaveableObjects(/*clear non-saveloadable*/true);
 		bool area_civ_exists = FGFileIoHandler
 			.DoesAreaVaultFileExists(sceneName, FGFileIoHandler.default_civ_vault_name);
 		if (area_civ_exists) {
@@ -78,7 +79,7 @@ public class FGSceneManip : MonoBehaviour {
 
 		// Load quickbelt config
 		GM.CurrentMovementManager.TeleportToPoint(GM.CurrentSceneSettings.DeathResetPoint.position, false);
-		SpawnPlayerQb(saveSlotName);
+		SpawnPlayerQbWithRetry(saveSlotName);
 		return true;
 	}
 
@@ -91,6 +92,7 @@ public class FGSceneManip : MonoBehaviour {
 
 		string sceneName = contract.SceneName;
 		string contract_civ_vault = contract.SceneCivConfigName;
+		VaultSystem.ClearExistingSaveableObjects(/*clear non-saveloadable*/true);
 		if (FGFileIoHandler.DoesAreaVaultFileExists(sceneName, contract_civ_vault))
 		{
 			SpawnAreaVaultFile(sceneName, contract_civ_vault);
@@ -116,7 +118,7 @@ public class FGSceneManip : MonoBehaviour {
 
 		// Load quickbelt config
 		GM.CurrentMovementManager.TeleportToPoint(GM.CurrentSceneSettings.DeathResetPoint.position, false);
-		SpawnPlayerQb(saveSlotName);
+		SpawnPlayerQbWithRetry(saveSlotName);
 		return true;
 	}
 
@@ -131,8 +133,8 @@ public class FGSceneManip : MonoBehaviour {
 							+ vault_file);
 		}
 		else if (VaultSystem.SpawnVaultFile(sceneFile, base.transform, false,
-																	false, /*clearScene=*/true, out error,
-																	Vector3.zero, null, false))
+																	false, /*clearScene=*/false, out error,
+																	Vector3.zero, null, /*IsAsyncLoading*/true))
 		{
 			Debug.LogWarning("Scene config loaded for area " + sceneName + vault_file);
 		}
@@ -142,18 +144,32 @@ public class FGSceneManip : MonoBehaviour {
 		}
 	}
 
-	public void SpawnPlayerQb(string saveSlotName) {
-		string empty = "";
+	public void SpawnPlayerQbWithRetry(string saveSlotName) {
+		StartCoroutine(FG_GM.TryWithRetries(() => {
+			return SpawnPlayerQb(saveSlotName);
+		}, 15, 1f));
+	}
+
+	public bool SpawnPlayerQb(string saveSlotName) {
 		VaultFile qbFile;
-		Debug.LogWarning("GM.IsAsyncLoading: " + GM.IsAsyncLoading);
+		if (GM.IsAsyncLoading) {
+			Debug.LogWarning("Waiting SpawnPlayerQb, IsAsyncLoading aka vault loading.");
+			return false; // retriable error
+		}
 		if (!FGFileIoHandler.LoadPlayerQuickbelt(saveSlotName, out qbFile)) {
-			Debug.Log("Loading CGriller Quickbelt file failed");
-		} else if (!GM.IsAsyncLoading && 
+			Debug.LogError("Loading CGriller Quickbelt file failed");
+			return true; // non-retriable error
+		}
+		string empty = "";
+		if (!GM.IsAsyncLoading && 
 					VaultSystem.SpawnVaultFile(qbFile, base.transform, false, /*isLoadout*/true,
-												false, out empty, Vector3.zero, null, false)) {
-			Debug.Log("Succeeded loading player loady");
+												false, out empty, Vector3.zero, null, 
+												/*IsAsyncLoading*/true)) {
+			Debug.LogWarning("Succeeded loading player loady");
+			return true;
 		} else {
 			Debug.LogError("Failed to spawn player loadout for reason:" + empty);
+			return true;
 		}
 	}
 

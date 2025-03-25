@@ -47,17 +47,21 @@ namespace NGA {
 
         public void AppendEventToSession(FGContractEvent contractEvent) {
             if (!sessionActive) {
+                Debug.LogWarning($"FGContractEventsRecorder: Attempted to append event {contractEvent.EventKey} to session, but session is not active.");
                 return;
             }
+            Debug.LogWarning($"FGContractEventsRecorder: Appending event {contractEvent.EventKey} to session.");
             CurrentSessionEvents.Add(contractEvent);
             OnEventRegistered?.Invoke(contractEvent);
         }
         public void StartSession() {
+            Debug.Log("FGContractEventsRecorder: Starting session.");
             sessionActive = true;
             CurrentSessionEvents.Clear();
             ListenToClassicH3Events();
         }
         public void WipeSession() {
+            Debug.Log("FGContractEventsRecorder: Wiping session.");
             sessionActive = false;
             CurrentSessionEvents.Clear();
             StopListeningToClassicH3Events();

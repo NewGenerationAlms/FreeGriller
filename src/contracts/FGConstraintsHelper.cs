@@ -111,7 +111,6 @@ public class GrillViaProjectileConstraint : IContractConstraint
         FGTargetPosse contractPosse = FG_GM.Instance.mapLoader.TargetPosses
                                         .Find(x => x.contract.uniqueID 
                                                 == context.myContract.uniqueID);
-        int numTargets = contractPosse.trackedTargets.Count;
         List<FGContractEvent> sosigKillEvents = 
             context.eventsInSession.FindAll(x => x.EventKey == "OnSosigKill");
         int numDeadTargetsTotal = 0;
@@ -132,7 +131,7 @@ public class GrillViaProjectileConstraint : IContractConstraint
             }
             if (targetsDiedByProjectile.Contains(sosig))
             {
-                Debug.LogWarning("Sosig already killed by projectile - unexpected event again.");
+                Debug.LogError("Sosig already killed by projectile - unexpected event again.");
                 continue;
             }
             FGTrackedSosig trackedSosig = contractPosse.FindSosig(sosig);
@@ -148,10 +147,10 @@ public class GrillViaProjectileConstraint : IContractConstraint
             }
             
         }
-        bool isItMet = numDeadTargetsTotal == targetsDiedByProjectile.Count;
+        bool isItMet = numDeadTargetsTotal > 0 && numDeadTargetsTotal == targetsDiedByProjectile.Count;
         bool isItFailed = false;
         if (context.isFinalCheck) {
-            isItFailed = numDeadTargetsTotal != targetsDiedByProjectile.Count;
+            isItFailed = numDeadTargetsTotal > 0 && numDeadTargetsTotal != targetsDiedByProjectile.Count;
         }
         ConstraintFactory
             .UpdateConstraintInContract(context, constraintKey, isItMet, isItFailed);

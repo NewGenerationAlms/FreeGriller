@@ -106,7 +106,7 @@ public class FGTargetPosse : MonoBehaviour
     private void SpawnEntities(
         Dictionary<string, List<SosigEnemyID>> entityList, 
         bool isTarget, bool isGuard, bool isExtra, 
-        List<FGSosigMandate> mandateList, 
+        List<FGSosigMandate> mandateList,
         List<FGTrackedSosig> trackedList)
     {
         HashSet<int> pickedMandateIndexes = new HashSet<int>();
@@ -114,6 +114,9 @@ public class FGTargetPosse : MonoBehaviour
         {
             string specialIdentifier = id_to_listSosigEnemyIds.Key;
             List<SosigEnemyID> possibleTypes = id_to_listSosigEnemyIds.Value;
+            if (possibleTypes == null || possibleTypes.Count == 0) {
+                continue;
+            }
 
             SosigEnemyID chosenEnemyType = (possibleTypes != null && possibleTypes.Count > 0) 
                 ? possibleTypes[UnityEngine.Random.Range(0, possibleTypes.Count)] 

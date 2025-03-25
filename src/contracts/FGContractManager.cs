@@ -225,6 +225,7 @@ public class FGContractManager : MonoBehaviour
 
     // NOTE: Contracts only marked as completed/failed when changing scenes.
     public void EvaluateAndUpdateActiveContractsOnEvent(FGContractEvent contractEvent) {
+        Debug.LogWarning($"Evaluating contracts on event {contractEvent.EventKey}");
         ContractEvaluationContext context = new ContractEvaluationContext();
         context.eventsInSession = FG_GM.Instance.eventsRecorder.CurrentSessionEvents;
         for (int contractIx = activeContracts.Count - 1; contractIx >= 0; contractIx--)
@@ -304,11 +305,13 @@ public class FGContractManager : MonoBehaviour
                     break;
                 }
             }
-            if (numMetMandatoryConstraints < numMandatoryConstraints)
+            if (ConstraintFactory.IsContractInAnyPosse(contract) &&
+                numMetMandatoryConstraints < numMandatoryConstraints)
             {
                 contractFailed = true;
-            } else {
+            } else if (numMetMandatoryConstraints >= numMandatoryConstraints) {
                 contractCompleted = true;
+                totalReward += contract.Compensation;
             }
             if (totalReward < 0)
             {
@@ -325,11 +328,12 @@ public class FGContractManager : MonoBehaviour
                 {
                     FG_GM.Instance.factionStance.TryAdjustReputation(repReward.FactionID, repReward.Rep);
                 }
-                Debug.Log($"Contract '{contract.uniqueID}' completed! Total reward: {totalReward}");
+                Debug.LogWarning($"Contract '{contract.uniqueID}' completed! Total reward: {totalReward}");
                 AddToCompletedContracts(contract);
                 activeContracts.RemoveAt(contractIx);
             } else if (contractFailed)
             {
+                Debug.LogWarning($"Contract '{contract.uniqueID}' failed!");
                 AddToCompletedContracts(contract);
                 activeContracts.RemoveAt(contractIx);
             }

@@ -17,7 +17,18 @@ public class FGMap {
     // -- Area specific configs -- \\
     public string defaultCivSceneConfigFileName; // overrides "default_civ" config for map
     public string defaultEnemySceneConfigFileName; // overrides "default_enemy" config for map
-    public List<string> otherSceneConfigFileNames; // can be referenced by name in FGContracts for this scene
+    public List<string> otherSceneConfigFileNames = new List<string>(); // can be referenced by name in FGContracts for this scene
+
+    // Copy constructor
+    public FGMap(FGMap other) {
+        sceneName = other.sceneName;
+        DisplayName = other.DisplayName;
+        price = other.price;
+        mapType = other.mapType;
+        defaultCivSceneConfigFileName = other.defaultCivSceneConfigFileName;
+        defaultEnemySceneConfigFileName = other.defaultEnemySceneConfigFileName;
+        otherSceneConfigFileNames = new List<string>(other.otherSceneConfigFileNames ?? Enumerable.Empty<string>());
+    }
 }
 
 public class FGMapsContainer {
@@ -41,30 +52,46 @@ public class FGMapsContainer {
     }
 
     public void RegisterMap(FGMap map, string sourceFolderName) {
+        if (map == null) {
+            Debug.LogError("Cannot register null map: " + sourceFolderName);
+            return;
+        }
         var existingMap = maps.Find(m => m.sceneName == map.sceneName);
         if (existingMap == null) {
-            maps.Add(map);
+            FGMap newmap = new FGMap(map);
+            maps.Add(newmap);
+            newmap.defaultCivSceneConfigFileName = 
+                string.IsNullOrEmpty(map.defaultCivSceneConfigFileName) ? string.Empty : Path.Combine(sourceFolderName, map.defaultCivSceneConfigFileName);
+            newmap.defaultEnemySceneConfigFileName = 
+                string.IsNullOrEmpty(map.defaultEnemySceneConfigFileName) ? string.Empty : Path.Combine(sourceFolderName, map.defaultEnemySceneConfigFileName);
         } else {
             // Update existing map with new data
             existingMap.DisplayName = map.DisplayName;
             existingMap.price = map.price;
             existingMap.mapType = map.mapType;
-            existingMap.defaultCivSceneConfigFileName = Path.Combine(sourceFolderName, map.defaultCivSceneConfigFileName);
-            existingMap.defaultEnemySceneConfigFileName = Path.Combine(sourceFolderName, map.defaultEnemySceneConfigFileName);
-            existingMap.otherSceneConfigFileNames.AddRange(map.otherSceneConfigFileNames.Select(fileName => Path.Combine(sourceFolderName, fileName)));
+            existingMap.defaultCivSceneConfigFileName = 
+                string.IsNullOrEmpty(map.defaultCivSceneConfigFileName) ? string.Empty : Path.Combine(sourceFolderName, map.defaultCivSceneConfigFileName);
+            existingMap.defaultEnemySceneConfigFileName = 
+                string.IsNullOrEmpty(map.defaultEnemySceneConfigFileName) ? string.Empty : Path.Combine(sourceFolderName, map.defaultEnemySceneConfigFileName);
+            existingMap.otherSceneConfigFileNames.AddRange(map.otherSceneConfigFileNames?
+                .Select(fileName => string.IsNullOrEmpty(fileName) ? string.Empty : Path.Combine(sourceFolderName, fileName)) ?? Enumerable.Empty<string>());
         }
-
+        FGMap addedMap = maps.Find(m => m.sceneName == map.sceneName);
+        
         // Copy default configs
-        if (!string.IsNullOrEmpty(map.defaultCivSceneConfigFileName)) {
-            FGFileIoHandler.CopyDefaultAreaConfigFile(map.sceneName, existingMap.defaultCivSceneConfigFileName, false);
+        if (!string.IsNullOrEmpty(addedMap.defaultCivSceneConfigFileName)) {
+            FGFileIoHandler.CopyDefaultAreaConfigFile(addedMap.sceneName, addedMap.defaultCivSceneConfigFileName, false);
         }
         if (!string.IsNullOrEmpty(map.defaultEnemySceneConfigFileName)) {
-            FGFileIoHandler.CopyDefaultAreaConfigFile(map.sceneName, existingMap.defaultEnemySceneConfigFileName, true);
+            FGFileIoHandler.CopyDefaultAreaConfigFile(addedMap.sceneName, addedMap.defaultEnemySceneConfigFileName, true);
         }
 
         // Copy other configs
-        foreach (var configFileName in map.otherSceneConfigFileNames) {
-            FGFileIoHandler.CopyAreaConfigFile(map.sceneName, configFileName);
+        foreach (var configFileName in addedMap.otherSceneConfigFileNames ?? Enumerable.Empty<string>()) {
+            FGFileIoHandler.CopyAreaConfigFile(addedMap.sceneName, configFileName);
+        }
+        if (map.mapType == 1) {
+            FG_GM.Instance.saveState.AddValidArea(addedMap.sceneName);
         }
     }
 }

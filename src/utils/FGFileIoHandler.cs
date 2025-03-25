@@ -195,6 +195,12 @@ namespace NGA
                     Directory.CreateDirectory(folderPath);
                 }
 
+                if (!File.Exists(fullConfigFileName))
+                {
+                    Debug.LogError($"Source file does not exist: {fullConfigFileName}");
+                    return false;
+                }
+
                 string fileName = Path.GetFileName(fullConfigFileName);
                 string destinationFilePath = Path.Combine(folderPath, fileName);
 
@@ -224,7 +230,11 @@ namespace NGA
                 {
                     Directory.CreateDirectory(folderPath);
                 }
-
+                if (!File.Exists(fullConfigFileName))
+                {
+                    Debug.LogError($"Source file does not exist: {fullConfigFileName}");
+                    return false;
+                }
                 string fileName = isEnemy ? default_enemy_vault_name : default_civ_vault_name;
                 string destinationFilePath = Path.Combine(folderPath, fileName + ".json");
 
@@ -239,9 +249,15 @@ namespace NGA
             }
         }
 
+        // Loadout.
         public static bool LoadPlayerQuickbelt(string saveSlotName, out VaultFile vaultFile)
         {
             vaultFile = null;
+            if (saveSlotName == null)
+            {
+                Debug.LogError("Save slot name or vault file is null.");
+                return false;
+            }
             try
             {
                 string saveFolder = GetH3SaveFolder();
@@ -255,9 +271,17 @@ namespace NGA
                 if (Directory.Exists(folderPath) && File.Exists(filePath))
                 {
                     string fileContents = File.ReadAllText(filePath);
+                    if (string.IsNullOrEmpty(fileContents))
+                    {
+                        Debug.LogError("File contents are empty or corrupted. Clearing.");
+                        File.Delete(filePath);
+                        return false;
+                    }
                     vaultFile = JsonUtility.FromJson<VaultFile>(fileContents);
 
                     return vaultFile != null;
+                } else {
+                    Debug.LogError($"Directory or file does not exist: {folderPath} or {filePath}");
                 }
 
                 return false;
@@ -271,6 +295,11 @@ namespace NGA
 
         public static bool SavePlayerQuickbelt(string saveSlotName, VaultFile vaultFile)
         {
+            if (saveSlotName == null || vaultFile == null)
+            {
+                Debug.LogError("Quickbelt save slot name or vault file is null.");
+                return false;
+            }
             try
             {
                 string saveFolder = GetH3SaveFolder();

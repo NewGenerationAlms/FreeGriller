@@ -25,14 +25,26 @@ public class FGExternalLoader {
                     if (File.Exists(manifestFile)) {
                         FGLoadManifest manifest = ExtractManifestFromFile(manifestFile);
                         if (manifest != null) {
-                            foreach (var map in manifest.maps) {
-                                FG_GM.Instance.MapContainer.RegisterMap(map, directory);
+                            if (manifest.maps != null) {
+                                foreach (var map in manifest.maps) {
+                                    FG_GM.Instance.MapContainer?.RegisterMap(map, directory);
+                                }
+                            } else {
+                                Debug.LogError($"No maps found in manifest: {manifestFile}");
                             }
-                            foreach (var faction in manifest.factions) {
-                                FG_GM.Instance.factionStance.RegisterFaction(faction);
+                            if (manifest.factions != null) {
+                                foreach (var faction in manifest.factions) {
+                                    FG_GM.Instance.factionStance?.RegisterFaction(faction);
+                                }
+                            } else {
+                                Debug.LogError($"No factions found in manifest: {manifestFile}");
                             }
-                            foreach (var contractTemplate in manifest.contractTemplates) {
-                                FGContractTemplateFactory.RegisterTemplate(contractTemplate);
+                            if (manifest.contractTemplates != null) {
+                                foreach (var contractTemplate in manifest.contractTemplates) {
+                                    FGContractTemplateFactory.RegisterTemplate(contractTemplate);
+                                }
+                            } else {
+                                Debug.LogError($"No contract templates found in manifest: {manifestFile}");
                             }
                         }
                     }

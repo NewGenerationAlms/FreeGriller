@@ -70,7 +70,7 @@
         "PossibleConstraints": [
           {
             "ConstraintID": "GrillViaProjectile",
-            "optional": false,
+            "optional": true,
             "rewardAddedIfSucceed": 50,
             "rewardSubtractedIfFail": 50
           },
@@ -78,7 +78,7 @@
             "ConstraintID": "GrillAllTargets",
             "optional": false,
             "rewardAddedIfSucceed": 0,
-            "rewardSubtractedIfFail": -999
+            "rewardSubtractedIfFail": 999
           }
         ],
         "RepRewards": [
@@ -130,7 +130,7 @@
             "ConstraintID": "GrillAllTargets",
             "optional": false,
             "rewardAddedIfSucceed": 0,
-            "rewardSubtractedIfFail": -9999
+            "rewardSubtractedIfFail": 9999
           }
         ],
         "RepRewards": [
