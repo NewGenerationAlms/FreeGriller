@@ -73,8 +73,13 @@ namespace NGA {
             return faction?.AlwaysHostileTowardsFactionIds.Contains(toFaction) ?? false;
         }
 
-        public bool IsFactionHostileTowardsPly(string factionId) {
-            // TODO: Determine if a faction is hostile towards the player. Unused rn.
+        public bool GetFactionEnemies(string factionId, out List<string> enemies) {
+            var faction = factions.FirstOrDefault(f => f.FactionId == factionId);
+            if (faction == null) {
+                enemies = new List<string>();
+                return false;
+            }
+            enemies = faction.AlwaysHostileTowardsFactionIds;
             return true;
         }
 

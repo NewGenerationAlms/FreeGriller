@@ -9,7 +9,6 @@ namespace NGA {
 // Represents a group of Sosigs that can be spawned based on different configurations.
 public class FGTargetPosse : MonoBehaviour
 {
-    // TODO: Populate fields from the contract.
     public FGContract contract { get; private set; } // Active contract
     public List<PosseConfig> TargetConfigs = new List<PosseConfig>(); // All configurations
 
@@ -26,6 +25,13 @@ public class FGTargetPosse : MonoBehaviour
         public List<FGSosigMandate> Targets = new List<FGSosigMandate>();
         public List<FGSosigMandate> Guards = new List<FGSosigMandate>();
         public List<FGSosigMandate> Extras = new List<FGSosigMandate>();
+    }
+
+    public FGMapFactionAssigner factionAssigner { get; private set; }
+
+    public FGTargetPosse()
+    {
+        factionAssigner = new FGMapFactionAssigner();
     }
 
 
@@ -154,8 +160,10 @@ public class FGTargetPosse : MonoBehaviour
             }
 
             FGTrackedSosig spawnedSosig = SpawnNpcFromMandate(chosenMandate);
-            if (spawnedSosig != null) 
+            if (spawnedSosig != null) {
                 trackedList.Add(spawnedSosig);
+                ConfigureSosigFaction(spawnedSosig, chosenMandate.Manifest.Faction);
+            }
         }
     }
     
@@ -203,6 +211,38 @@ public class FGTargetPosse : MonoBehaviour
         // Example: sosig.SetFaction(mandate.Manifest.Faction);
         
         return new FGTrackedSosig { SosigInstance = sosig, Path = mandate.Path, Manifest = mandate.Manifest };
+    }
+
+    private void ConfigureSosigFaction(FGTrackedSosig trackedSosig, string faction)
+    {
+        Sosig sosig = trackedSosig.SosigInstance;
+        FGFactionStance stance = FG_GM.Instance.factionStance;
+        stance.GetFactionEnemies(faction, out var enemies);
+        sosig.SetIFF(factionAssigner.AssignIFF(faction));
+        // Make Sosig friendly to all factions by default, updated afterwards.
+        sosig.Priority.SetAllFriendly();
+        FGMapFactionAssigner.MakeSosigThreatenableToAll(sosig);
+        
+        // Make Sosig hostile to all enemies of the faction.
+        foreach (var enemy in enemies)
+        {
+            factionAssigner.SetSosigFriendlyToFaction(sosig, enemy, false);
+        }
+
+        // Make Sosig friendly to all target and guard factions if it is a target 
+        // or guard.
+        if (trackedSosig.Manifest.IsTarget || trackedSosig.Manifest.IsGuard)
+        {
+            var friendlyFactions = contract._Faction_Target.Values
+                .Concat(contract._Faction_Guards.Values)
+                .Distinct();
+
+            foreach (var friendlyFaction in friendlyFactions)
+            {
+                factionAssigner.SetSosigFriendlyToFaction(sosig, friendlyFaction, true);
+                factionAssigner.SetSosigThreatableToFaction(sosig, friendlyFaction, false);
+            }
+        }
     }
 
 }
