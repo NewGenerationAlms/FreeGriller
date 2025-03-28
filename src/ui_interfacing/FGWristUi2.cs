@@ -19,7 +19,6 @@ public class FGWristUi2 : MonoBehaviour {
 
 	[Header("UI References")]
 	private Transform Canvas;
-	private Transform ButtonsSection;
 	private Transform TimeText;
 	private Transform TravelTab; // Index 0
 	private Transform ContractsTab; // Ix 1
@@ -41,13 +40,11 @@ public class FGWristUi2 : MonoBehaviour {
 
 	public void Update () {
 		UpdateWristMenu();
-		// TODO: Update clock.
 	}
 
 	// -- Paints and reacts the UI -- \\
 	private void FindUiVariables() {
 		Canvas = transform.Find("Canvas");
-		ButtonsSection = Canvas.Find("SubmenuButs");
 		TravelTab = Canvas.Find("TravelTab");
 		ContractsTab = Canvas.Find("ContractsTab");
 		TimeTab = Canvas.Find("TimeTab");
@@ -55,11 +52,11 @@ public class FGWristUi2 : MonoBehaviour {
 		RepTab = Canvas.Find("RepTab");
 
 		// Bits.
-		TimeText = Canvas.Find("Time");
+		TimeText = Canvas.Find("QuickMenu").Find("Time");
 
 		// Contracts vertical list.
-		ContractsVertList = ContractsTab.Find("ContractsList");
-		ContractStickerTempl = ContractsVertList.Find("ContractStickerTmpl");
+		ContractsVertList = ContractsTab.Find("ContractsList").Find("ViewPort").Find("Content");
+		ContractStickerTempl = ContractsTab.Find("ContractsList").Find("ContractStickerTmpl");
 	}
 
     public void CloseTabs()
@@ -70,19 +67,15 @@ public class FGWristUi2 : MonoBehaviour {
 		BankTab.gameObject.SetActive(false);
 		RepTab.gameObject.SetActive(false);
     }
-	public void ClearContractTexts() {
-		// TODO: Do for all in vertical list
-		Text descriptionText = ContractStickerTempl.Find("Description").GetComponentInChildren<Text>();
-		descriptionText.text = "";
-		Text longtext = ContractsTab.Find("ContractDescription").Find("Description").GetComponentInChildren<Text>();
-		longtext.text = "";
-	}
 
-	// TODO: Extend so it's vertical list.
+
 	public void BTN_DisplayQuests(int i) {
 		currQuestTabType = i;
 		selectedQuestIndex = -1; // Unselect previous.
-		ClearContractTexts();
+		for (int j = 0; j < ContractsVertList.childCount; j++) {
+			Destroy(ContractsVertList.GetChild(j).gameObject);
+		}
+
 		List<FGContract> contracts = GetCurrentContractList();
 		string tabname;
 		switch (i) {
@@ -99,29 +92,39 @@ public class FGWristUi2 : MonoBehaviour {
 				tabname = "";
 				break;
 		}
-		Text descriptionText = ContractStickerTempl.Find("Description").GetComponentInChildren<Text>();
-		foreach (FGContract fGContract in contracts) {	
+		for (int iterIx = 0; iterIx < contracts.Count; iterIx++) {
+			FGContract fGContract = contracts[iterIx];
+			// Instantiate ContractStickerTemplate inside ContractsVertList and set its text.
+			Transform newContractSticker = Instantiate(ContractStickerTempl.gameObject, ContractsVertList).transform;
+			Text descriptionText = newContractSticker.Find("Description").GetComponentInChildren<Text>();
 			descriptionText.text = "" + fGContract.DisplayName + "\n" 
 									+ fGContract.TargetFirstName + " " + fGContract.TargetLastName + "\n"
 									+ fGContract.Infraction + "\n"
 									+ tabname;
-			break; // TODO: Do all verticals list
+			int index = iterIx;
+            Button newButton = newContractSticker.Find("Btn_MoreDetails").Find("BTN_MoreDetails").GetComponent<Button>();
+            newButton.onClick.AddListener(() => BTN_DisplayQuestDetail(index));
+			newContractSticker.gameObject.SetActive(true);
 		}
 		selectedQuestIndex = contracts.Count == 0 ? -1 : 0; // Default to select first
-		BTN_DisplayQuestDetail();		
+		BTN_DisplayQuestDetail(selectedQuestIndex);		
 	}
-	public void BTN_DisplayQuestDetail() {
+	public void BTN_DisplayQuestDetail(int i = -1) {
+		selectedQuestIndex = i;
+		Text longtext = ContractsTab.Find("ContractDescription")
+						.Find("DescriptionScroll").Find("ViewPort")
+						.Find("Description").GetComponentInChildren<Text>();
 		if (selectedQuestIndex < 0) {
+			longtext.text = "";
 			return;
 		}
 		List<FGContract> contracts = GetCurrentContractList();
 		if (selectedQuestIndex >= contracts.Count) {
+			longtext.text = "Selected index is invalid " + selectedQuestIndex
+							+ " compared to available contracts list " + contracts.Count;
 			return;
 		}
-
-		// TODO get quest from id
 		FGContract fGContract = contracts[selectedQuestIndex];
-		Text longtext = ContractsTab.Find("ContractDescription").Find("Description").GetComponentInChildren<Text>();
 		longtext.text = fGContract.PrintContract();
 	}
 	private List<FGContract> GetCurrentContractList() {
