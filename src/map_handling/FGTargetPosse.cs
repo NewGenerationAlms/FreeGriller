@@ -29,11 +29,10 @@ public class FGTargetPosse : MonoBehaviour
 
     public FGMapFactionAssigner factionAssigner { get; private set; }
 
-    public FGTargetPosse()
+    private void Awake()
     {
         factionAssigner = new FGMapFactionAssigner();
     }
-
 
     // Assigns a new contract, clearing any existing Sosigs.
     public void SetContract(FGContract newContract)
@@ -219,6 +218,7 @@ public class FGTargetPosse : MonoBehaviour
         FGFactionStance stance = FG_GM.Instance.factionStance;
         stance.GetFactionEnemies(faction, out var enemies);
         sosig.SetIFF(factionAssigner.AssignIFF(faction));
+        sosig.CanBeThreatened = true;
         // Make Sosig friendly to all factions by default, updated afterwards.
         sosig.Priority.SetAllFriendly();
         FGMapFactionAssigner.MakeSosigThreatenableToAll(sosig);

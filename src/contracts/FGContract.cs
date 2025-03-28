@@ -20,18 +20,33 @@ public class FGContract
 
 
     // --- Target Info --- \\
+    [Serializable]
+    public class SerializableKeyValuePair
+    {
+        public string Key;
+        public string Value;
+
+        public SerializableKeyValuePair() { }
+
+        public SerializableKeyValuePair(string key, string value)
+        {
+            Key = key;
+            Value = value;
+        }
+    }
+
     // Mapping from gameplanner keys to SosigEnemyIDs.
-    [SerializeField] private List<KeyValuePair<string, List<SosigEnemyID>>> TargetIDs = new List<KeyValuePair<string, List<SosigEnemyID>>>(); // default key "targets"
-    [SerializeField] private List<KeyValuePair<string, List<SosigEnemyID>>> GuardIDs = new List<KeyValuePair<string, List<SosigEnemyID>>>(); // default key "guards"
-    [SerializeField] private List<KeyValuePair<string, List<SosigEnemyID>>> ExtrasIDs = new List<KeyValuePair<string, List<SosigEnemyID>>>(); // default key "extras"
+    [SerializeField] private List<SerializableKeyValuePair> TargetIDs = new List<SerializableKeyValuePair>(); // default key "targets"
+    [SerializeField] private List<SerializableKeyValuePair> GuardIDs = new List<SerializableKeyValuePair>(); // default key "guards"
+    [SerializeField] private List<SerializableKeyValuePair> ExtrasIDs = new List<SerializableKeyValuePair>(); // default key "extras"
     [NonSerialized] public Dictionary<string, List<SosigEnemyID>> _TargetIDs = new Dictionary<string, List<SosigEnemyID>>();
     [NonSerialized] public Dictionary<string, List<SosigEnemyID>> _GuardIDs = new Dictionary<string, List<SosigEnemyID>>();
     [NonSerialized] public Dictionary<string, List<SosigEnemyID>> _ExtrasIDs = new Dictionary<string, List<SosigEnemyID>>();
 
     // Mapping from gameplanner keys to factions.
-    [SerializeField] private List<KeyValuePair<string, string>> Faction_Target = new List<KeyValuePair<string, string>>();  // Add list of factions for Target
-    [SerializeField] private List<KeyValuePair<string, string>> Faction_Guards = new List<KeyValuePair<string, string>>();   // Add list of factions for Guards
-    [SerializeField] private List<KeyValuePair<string, string>> Faction_Extras = new List<KeyValuePair<string, string>>();   // Add list of factions for Extras
+    [SerializeField] private List<SerializableKeyValuePair> Faction_Target = new List<SerializableKeyValuePair>();  // Add list of factions for Target
+    [SerializeField] private List<SerializableKeyValuePair> Faction_Guards = new List<SerializableKeyValuePair>();   // Add list of factions for Guards
+    [SerializeField] private List<SerializableKeyValuePair> Faction_Extras = new List<SerializableKeyValuePair>();   // Add list of factions for Extras
     [NonSerialized] public Dictionary<string, string> _Faction_Target = new Dictionary<string, string>();
     [NonSerialized] public Dictionary<string, string> _Faction_Guards = new Dictionary<string, string>();
     [NonSerialized] public Dictionary<string, string> _Faction_Extras = new Dictionary<string, string>();
@@ -197,38 +212,38 @@ public class FGContract
     public void ConvertToSerializable()
     {
         GuardIDs.Clear();
-        foreach (var kvp in _GuardIDs) // _GuardIDs is your original dictionary
+        foreach (var kvp in _GuardIDs)
         {
-            GuardIDs.Add(new KeyValuePair<string, List<SosigEnemyID>>(kvp.Key, kvp.Value));
+            GuardIDs.Add(new SerializableKeyValuePair(kvp.Key, string.Join(",", kvp.Value.Select(id => id.ToString()).ToArray())));
         }
         
         TargetIDs.Clear();
-        foreach (var kvp in _TargetIDs) // _TargetIDs is your original dictionary
+        foreach (var kvp in _TargetIDs)
         {
-            TargetIDs.Add(new KeyValuePair<string, List<SosigEnemyID>>(kvp.Key, kvp.Value));
+            TargetIDs.Add(new SerializableKeyValuePair(kvp.Key, string.Join(",", kvp.Value.Select(id => id.ToString()).ToArray())));
         }
         
         ExtrasIDs.Clear();
-        foreach (var kvp in _ExtrasIDs) // _ExtrasIDs is your original dictionary
+        foreach (var kvp in _ExtrasIDs)
         {
-            ExtrasIDs.Add(new KeyValuePair<string, List<SosigEnemyID>>(kvp.Key, kvp.Value));
+            ExtrasIDs.Add(new SerializableKeyValuePair(kvp.Key, string.Join(",", kvp.Value.Select(id => id.ToString()).ToArray())));
         }
         Faction_Target.Clear();
-        foreach (var kvp in _Faction_Target) // _Faction_Target is your original dictionary
+        foreach (var kvp in _Faction_Target)
         {
-            Faction_Target.Add(new KeyValuePair<string, string>(kvp.Key, kvp.Value));
+            Faction_Target.Add(new SerializableKeyValuePair(kvp.Key, kvp.Value));
         }
 
         Faction_Guards.Clear();
-        foreach (var kvp in _Faction_Guards) // _Faction_Guards is your original dictionary
+        foreach (var kvp in _Faction_Guards)
         {
-            Faction_Guards.Add(new KeyValuePair<string, string>(kvp.Key, kvp.Value));
+            Faction_Guards.Add(new SerializableKeyValuePair(kvp.Key, kvp.Value));
         }
 
         Faction_Extras.Clear();
-        foreach (var kvp in _Faction_Extras) // _Faction_Extras is your original dictionary
+        foreach (var kvp in _Faction_Extras)
         {
-            Faction_Extras.Add(new KeyValuePair<string, string>(kvp.Key, kvp.Value));
+            Faction_Extras.Add(new SerializableKeyValuePair(kvp.Key, kvp.Value));
         }
     }
 
@@ -238,19 +253,19 @@ public class FGContract
         _GuardIDs.Clear();
         foreach (var kvp in GuardIDs)
         {
-            _GuardIDs.Add(kvp.Key, kvp.Value);
+            _GuardIDs.Add(kvp.Key, kvp.Value.Split(',').Select(id => (SosigEnemyID)Enum.Parse(typeof(SosigEnemyID), id)).ToList());
         }
         
         _TargetIDs.Clear();
         foreach (var kvp in TargetIDs)
         {
-            _TargetIDs.Add(kvp.Key, kvp.Value);
+            _TargetIDs.Add(kvp.Key, kvp.Value.Split(',').Select(id => (SosigEnemyID)Enum.Parse(typeof(SosigEnemyID), id)).ToList());
         }
         
         _ExtrasIDs.Clear();
         foreach (var kvp in ExtrasIDs)
         {
-            _ExtrasIDs.Add(kvp.Key, kvp.Value);
+            _ExtrasIDs.Add(kvp.Key, kvp.Value.Split(',').Select(id => (SosigEnemyID)Enum.Parse(typeof(SosigEnemyID), id)).ToList());
         }
         _Faction_Target.Clear();
         foreach (var kvp in Faction_Target)

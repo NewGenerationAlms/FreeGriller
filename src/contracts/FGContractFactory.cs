@@ -51,87 +51,6 @@ public class FGContractTemplateFactory
             ? possibleTemplates[UnityEngine.Random.Range(0, possibleTemplates.Count)] 
             : null;
     }
-
-    public static void RegisterDefaultContractTemplates()
-    {
-        RegisterTemplate(new FGContractTemplate
-        {
-            TemplateID = "Hollys_LowRep",
-            HiringFactionID = "Hollys",
-            ReputationRequirements = new List<FGContract.ReputationRequirement> {
-                new FGContract.ReputationRequirement { FactionID = "Hollys", MaximumRep = 10.0f, MinimumRep = -10.0f}
-            },
-            Infraction = "Did Something bad",
-            MinGuards = 0,
-            MaxGuards = 1,
-            PossibleGuardTypes = new List<SosigEnemyID> { (SosigEnemyID)400 },
-            PossibleGuardFactionIDs = new List<string> {"Buddys"},
-            MinTargets = 1,
-            MaxTargets = 2,
-            PossibleTargetTypes = new List<SosigEnemyID> { (SosigEnemyID)2000, (SosigEnemyID)2001, (SosigEnemyID)2003 },
-            PossibleTargetFactionIDs = new List<string> {"Buddys"},
-            MinExtras = 0,
-            MaxExtras = 0,
-            PossibleExtraTypes = new List<SosigEnemyID> {  },
-            PossibleScenes = new List<string> { "Grillhouse_2Story" },
-            PossibleSceneCivConfigs = new List<string> {"default_civ"},
-            PossibleSceneEnemConfigs = new List<string> {"default_enemy"},
-            MinCompensation = 90,
-            MaxCompensation = 110,
-            PossibleConstraints = new List<FGContract.ConstraintAndReward>
-            {
-                new FGContract.ConstraintAndReward 
-                { ConstraintID = "GrillViaProjectile", optional = false,
-                rewardAddedIfSucceed = 50, rewardSubtractedIfFail = 50 }
-            },
-            RepRewards = new List<FGContract.ReputationReward>
-            {
-                new FGContract.ReputationReward
-                { FactionID = "Hollys", Rep = 0.4f },
-                new FGContract.ReputationReward
-                { FactionID = "Buddys", Rep = -0.8f }
-            }
-        });
-
-        RegisterTemplate(new FGContractTemplate
-        {
-            TemplateID = "Hollys_HighRep",
-            HiringFactionID = "Hollys",
-            ReputationRequirements = new List<FGContract.ReputationRequirement> {
-                new FGContract.ReputationRequirement { FactionID = "Hollys", MaximumRep = 50.0f, MinimumRep = 10.1f}
-            },
-            Infraction = "Did Something bad", // TODO: Infractions should be allocated from pools.
-            MinGuards = 1,
-            MaxGuards = 5,
-            PossibleGuardTypes = new List<SosigEnemyID> { (SosigEnemyID)100 },
-            PossibleGuardFactionIDs = new List<string> {"Buddys"},
-            MinTargets = 1,
-            MaxTargets = 1,
-            PossibleTargetTypes = new List<SosigEnemyID> { (SosigEnemyID)3020 },
-            PossibleTargetFactionIDs = new List<string> {"Buddys"},
-            MinExtras = 0,
-            MaxExtras = 0,
-            PossibleExtraTypes = new List<SosigEnemyID> {  },
-            PossibleScenes = new List<string> { "Grillhouse_2Story" },
-            PossibleSceneCivConfigs = new List<string> {"default_civ"},
-            PossibleSceneEnemConfigs = new List<string> {"default_enemy"},
-            MinCompensation = 2250,
-            MaxCompensation = 2750,
-            PossibleConstraints = new List<FGContract.ConstraintAndReward>
-            {
-                new FGContract.ConstraintAndReward 
-                { ConstraintID = "GrillViaProjectile", optional = true,
-                rewardAddedIfSucceed = 200, rewardSubtractedIfFail = 200 }
-            },
-            RepRewards = new List<FGContract.ReputationReward>
-            {
-                new FGContract.ReputationReward
-                { FactionID = "Hollys", Rep = 0.8f },
-                new FGContract.ReputationReward
-                { FactionID = "Buddys", Rep = -1.0f }
-            }
-        });
-    }
 }
 
 [Serializable]
@@ -145,7 +64,7 @@ public class FGContractTemplate
     public List<SosigEnemyID> PossibleGuardTypes;
     public List<string> PossibleGuardFactionIDs;
 
-    public int MinTargets, MaxTargets;
+    public int MinTargets = 1, MaxTargets;
     public List<SosigEnemyID> PossibleTargetTypes;
     public List<string> PossibleTargetFactionIDs;
 
@@ -207,6 +126,9 @@ public class FGContractTemplate
 
     private bool ValidateContract() {
         bool scenesOk = PossibleScenes.Count > 0;
+        if (MinTargets < 1) {
+            Debug.LogError("I expected MinTargets must be at least 1.");
+        }
         return scenesOk;
     }
 
@@ -215,6 +137,9 @@ public class FGContractTemplate
         int targetCount = UnityEngine.Random.Range(MinTargets, MaxTargets + 1);
         int guardCount = UnityEngine.Random.Range(MinGuards, MaxGuards + 1);
         int extraCount = UnityEngine.Random.Range(MinExtras, MaxExtras + 1);
+        Debug.Log($"Assigning {targetCount} targets, {guardCount} guards, {extraCount} extras.");
+        Debug.Log($"PossibleTargetTypes: {string.Join(", ", PossibleTargetTypes.Select(type => type.ToString()).ToArray())}");
+        Debug.Log($"PossibleGuardTypes: {string.Join(", ", PossibleGuardTypes.Select(type => type.ToString()).ToArray())}");
 
         contract._TargetIDs["targets"] = SelectRandomSubset(PossibleTargetTypes, targetCount);
         contract._GuardIDs["guards"] = SelectRandomSubset(PossibleGuardTypes, guardCount);
@@ -223,6 +148,8 @@ public class FGContractTemplate
 
     private void AssignFactionsTargetsGuardsExtras(FGContract contract)
     {
+        Debug.Log("PossibleTargetFactionIDs: " + string.Join(", ", PossibleTargetFactionIDs.ToArray()));
+        Debug.Log("PossibleGuardFactionIDs: " + string.Join(", ", PossibleGuardFactionIDs.ToArray()));
         contract._Faction_Target["targets"] = GetRandomFromListOrEmpty(PossibleTargetFactionIDs);
         contract._Faction_Guards["guards"] = GetRandomFromListOrEmpty(PossibleGuardFactionIDs);
         contract._Faction_Extras["extras"] = GetRandomFromListOrEmpty(PossibleExtrasFactionIDs);

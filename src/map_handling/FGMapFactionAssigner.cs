@@ -7,7 +7,7 @@ namespace NGA {
 
 // Used only inside maps that have a contract spawned in them. 
 // Dynamically assigns IFFs to factions in the scene.
-public class FGMapFactionAssigner : MonoBehaviour
+public class FGMapFactionAssigner
 {
     private Dictionary<string, int> factionToIFF;
     private int nextIFF;

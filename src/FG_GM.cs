@@ -51,13 +51,17 @@ namespace NGA
             
             // Add event callbacks.
             SceneManager.sceneLoaded += OnSceneLoaded;
+            if (!GM.CurrentSceneSettings.QuitReceivers.Contains(gameObject))
+            {
+                GM.CurrentSceneSettings.QuitReceivers.Add(gameObject);
+            }
             
             Init();
             FGExternalLoader.LoadManifestsFromBepinex(); // Load after init so new templates/factions are added.
         }
 
         private void Init() {
-            StartCoroutine(SpawnWristMenuWithRetries(40, 3f)); // Retry up to 10 times, every 10 seconds
+            StartCoroutine(SpawnWristMenuWithRetries(40, 3f));
             InitSaveState();
         }
         private void InitSaveState() {
@@ -76,7 +80,7 @@ namespace NGA
                 {
                     // TODO: New saveslot code should go here.
                     saveState = FGState.GetDefaultSave();
-                    PrepareAndSave();
+                    SaveGameState();
                 }
             }
         }
@@ -117,7 +121,7 @@ namespace NGA
             factionStance.InitFromConfig(result);
         }
 
-        private void PrepareAndSave() {
+        private void SaveGameState() {
             saveState.timeSysConfig = JsonUtility.ToJson(timeSys.GetConfig());
             saveState.contractManConfig = JsonUtility.ToJson(contractMan.GetConfig());
             saveState.bankConfig = JsonUtility.ToJson(bank.GetConfig());
@@ -125,32 +129,44 @@ namespace NGA
             FGFileIoHandler.SaveFGState(saveSlotName, saveState);
         }
 
-        // Kicks off level transition and marks internal "loading" state.
-        public void TransitionToLevel(string goto_scene)
-		{
-			if (causedInTransitioningLevels)
-			{
-				return; // Skip if new level already being loaded.
-			}
-            if (!Application.CanStreamedLevelBeLoaded(goto_scene)) {
+        private bool VerifyTransitionOk(string goto_scene)
+        {
+            if (causedInTransitioningLevels)
+            {
+                return false; // Skip if new level already being loaded.
+            }
+            if (!Application.CanStreamedLevelBeLoaded(goto_scene))
+            {
                 Debug.LogError("Scene name requested does not exist.");
-                return;
+                return false;
             }
-            // Fails if traveling to unallowed scene.
-            if (!saveState.IsValidHome(goto_scene) &&
-                !saveState.IsValidArea(goto_scene)) {
+            if (!saveState.IsValidHome(goto_scene) && !saveState.IsValidArea(goto_scene))
+            {
                 Debug.LogError("Character not allowed to travel to that area.");
-                return;
+                return false;
             }
+            return true;
+        }
 
-            OnSceneChangeRequested(true);
-
+        private void HandleContractCompletion()
+        {
             // Checks if active contracts completed. Constraints checkers know to ignore
             // if no contracts had relevant info updated.
             // Implicitly checks that traveling between scenes is safe (through travel area).
             contractMan.CheckContractCompletionOnAreaExit();
             eventsRecorder.WipeSession();
             eventsRecorder.OnEventRegistered -= contractMan.EvaluateAndUpdateActiveContractsOnEvent;
+        }
+
+        // Kicks off level transition and marks internal "loading" state.
+        public void TransitionToLevel(string goto_scene)
+		{
+            if (!VerifyTransitionOk(goto_scene))
+            {
+                return;
+            }
+            VaultSaveBeforeTransition(goto_scene);
+            HandleContractCompletion();
 
             // Loads next level.
             causedInTransitioningLevels = true;
@@ -178,8 +194,8 @@ namespace NGA
             {
                 GM.CurrentSceneSettings.QuitReceivers.Add(gameObject);
             }
-            StartCoroutine(SpawnWristMenuWithRetries(60, 1f)); // Needs retries bc of default scene loader.
-            PrepareAndSave();
+            StartCoroutine(SpawnWristMenuWithRetries(60, 1f));
+            SaveGameState();
             // If scene transitioned due to FreeGriller.
             if (causedInTransitioningLevels) {
                 eventsRecorder.StartSession();
@@ -208,7 +224,8 @@ namespace NGA
         }
 
         // Handles QB and scene saving during FG_GM traversals.
-        private void OnSceneChangeRequested(bool isLoading) {
+        // Assumes you always "travel-to" home and don't start the game there.
+        private void VaultSaveBeforeTransition(string goto_scene) {
             string currSceneName = SceneManager.GetActiveScene().name;
             if (lastTransitionedToSceneName != currSceneName) {
                 Debug.LogWarning("Scene we're traveling from was not arrived at through FG_GM " +
@@ -236,7 +253,7 @@ namespace NGA
                 SaveHomeSceneConfigToFile(lastTransitionedToSceneName);
                 SavePlayerQuickbetToFile();
             }
-            PrepareAndSave();
+            SaveGameState();
         }
 
         // -- Utilities -- \\
@@ -252,9 +269,9 @@ namespace NGA
         }
         public void SavePlayerQuickbetToFile() {
             VaultFile curQb = new VaultFile();
+            // False means quickbelt is empty.
             if (!VaultSystem.FindAndScanObjectsInQuickbelt(curQb)) {
-                Debug.LogError("Failed to scan player QB during level transition.");
-                return;
+                Debug.LogWarning("Empty quickbelt!");
             }
             // Allows empty loadouts to be saved.
             if (!FGFileIoHandler.SavePlayerQuickbelt(saveSlotName, curQb))
@@ -291,7 +308,15 @@ namespace NGA
                 Debug.LogError(wristUiSpawnId + " not found in IM.OD!");
                 return false;
             }
-            GameObject gameObject = UnityEngine.Object.Instantiate<GameObject>(wristUiFvr.GetGameObject(), Vector3.zero, Quaternion.identity);
+            try
+            {
+                GameObject gameObject = UnityEngine.Object.Instantiate<GameObject>(wristUiFvr.GetGameObject(), Vector3.zero, Quaternion.identity);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"Failed to spawn wrist menu: {ex.Message}");
+                return false;
+            }
             Debug.LogWarning($"{wristUiSpawnId} supposedly spawned");
             return true;
         }

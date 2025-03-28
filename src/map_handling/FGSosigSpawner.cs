@@ -69,6 +69,8 @@ public static class FGSosigSpawner
         sosig.SetGuardInvestigateDistanceThreshold(3f); // TODO: Replace magic number if configurable
         sosig.UpdateIdlePoint(position);
         sosig.SetDominantGuardDirection(sosig.transform.forward);
+        sosig.CanBeThreatened = true;
+        FGMapFactionAssigner.MakeSosigThreatenableToAll(sosig);
 
         // Default fallback order to first order.
         sosig.FallbackOrder = (Sosig.SosigOrder)manifest.SosigOrder;
