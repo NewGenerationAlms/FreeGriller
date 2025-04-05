@@ -89,6 +89,10 @@ public static class ConstraintFactory
     {
         foreach (FGTargetPosse posse in FG_GM.Instance.mapLoader.TargetPosses)
         {
+            if (posse == null || posse.contract == null)
+            {
+                continue;
+            }
             if (posse.contract.uniqueID == contract.uniqueID)
             {
                 return true;

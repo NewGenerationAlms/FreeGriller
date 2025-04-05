@@ -214,19 +214,19 @@ public class FGContract
         GuardIDs.Clear();
         foreach (var kvp in _GuardIDs)
         {
-            GuardIDs.Add(new SerializableKeyValuePair(kvp.Key, string.Join(",", kvp.Value.Select(id => id.ToString()).ToArray())));
+            GuardIDs.Add(new SerializableKeyValuePair(kvp.Key, string.Join(",", kvp.Value.Select(id => ((int)id).ToString()).ToArray())));
         }
         
         TargetIDs.Clear();
         foreach (var kvp in _TargetIDs)
         {
-            TargetIDs.Add(new SerializableKeyValuePair(kvp.Key, string.Join(",", kvp.Value.Select(id => id.ToString()).ToArray())));
+            TargetIDs.Add(new SerializableKeyValuePair(kvp.Key, string.Join(",", kvp.Value.Select(id => ((int)id).ToString()).ToArray())));
         }
         
         ExtrasIDs.Clear();
         foreach (var kvp in _ExtrasIDs)
         {
-            ExtrasIDs.Add(new SerializableKeyValuePair(kvp.Key, string.Join(",", kvp.Value.Select(id => id.ToString()).ToArray())));
+            ExtrasIDs.Add(new SerializableKeyValuePair(kvp.Key, string.Join(",", kvp.Value.Select(id => ((int)id).ToString()).ToArray())));
         }
         Faction_Target.Clear();
         foreach (var kvp in _Faction_Target)
@@ -253,19 +253,19 @@ public class FGContract
         _GuardIDs.Clear();
         foreach (var kvp in GuardIDs)
         {
-            _GuardIDs.Add(kvp.Key, kvp.Value.Split(',').Select(id => (SosigEnemyID)Enum.Parse(typeof(SosigEnemyID), id)).ToList());
+            _GuardIDs.Add(kvp.Key, kvp.Value.Split(',').Select(id => (SosigEnemyID)int.Parse(id)).ToList());
         }
         
         _TargetIDs.Clear();
         foreach (var kvp in TargetIDs)
         {
-            _TargetIDs.Add(kvp.Key, kvp.Value.Split(',').Select(id => (SosigEnemyID)Enum.Parse(typeof(SosigEnemyID), id)).ToList());
+            _TargetIDs.Add(kvp.Key, kvp.Value.Split(',').Select(id => (SosigEnemyID)int.Parse(id)).ToList());
         }
         
         _ExtrasIDs.Clear();
         foreach (var kvp in ExtrasIDs)
         {
-            _ExtrasIDs.Add(kvp.Key, kvp.Value.Split(',').Select(id => (SosigEnemyID)Enum.Parse(typeof(SosigEnemyID), id)).ToList());
+            _ExtrasIDs.Add(kvp.Key, kvp.Value.Split(',').Select(id => (SosigEnemyID)int.Parse(id)).ToList());
         }
         _Faction_Target.Clear();
         foreach (var kvp in Faction_Target)
