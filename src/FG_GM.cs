@@ -65,23 +65,29 @@ namespace NGA
             InitSaveState();
         }
         private void InitSaveState() {
-            if (saveState == null)
+            try {
+                if (saveState == null)
+                {
+                    FGFileIoHandler.LoadFGState(saveSlotName, out FGState loadedState);
+                    if (loadedState != null)
+                    {
+                        saveState = loadedState;
+                        InitTimeSysFromSave();
+                        InitContractManFromSave();
+                        InitBankFromSave();
+                        InitFactionStanceFromSave();
+                    }
+                    else
+                    {
+                        // TODO: New saveslot code should go here.
+                        saveState = FGState.GetDefaultSave();
+                        SaveGameState();
+                    }
+                }
+            }
+            catch (Exception ex)
             {
-                FGFileIoHandler.LoadFGState(saveSlotName, out FGState loadedState);
-                if (loadedState != null)
-                {
-                    saveState = loadedState;
-                    InitTimeSysFromSave();
-                    InitContractManFromSave();
-                    InitBankFromSave();
-                    InitFactionStanceFromSave();
-                }
-                else
-                {
-                    // TODO: New saveslot code should go here.
-                    saveState = FGState.GetDefaultSave();
-                    SaveGameState();
-                }
+                Debug.LogError($"Exception in InitSaveState: {ex.Message}\n{ex.StackTrace}");
             }
         }
         private void InitTimeSysFromSave() {

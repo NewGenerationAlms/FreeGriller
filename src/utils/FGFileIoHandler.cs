@@ -10,7 +10,7 @@ namespace NGA
 {
     public class FGFileIoHandler
     {
-        public static string rootSaveFolder = "FreeGrillerAlpha1";
+        public static string rootSaveFolder = "FreeGrillerAlpha2";
         public static string default_civ_vault_name = "default_civ";
         public static string default_enemy_vault_name = "default_enemy";
         
