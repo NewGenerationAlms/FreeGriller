@@ -20,33 +20,30 @@ public class FGContract
 
 
     // --- Target Info --- \\
-    [Serializable]
-    public class SerializableKeyValuePair
-    {
-        public string Key;
-        public string Value;
+    // Remove SerializableKeyValuePair and related lists
+    // [Serializable]
+    // public class SerializableKeyValuePair { ... }
 
-        public SerializableKeyValuePair() { }
+    // Replace Faction_Target, Faction_Guards, Faction_Extras
+    [SerializeField] private List<string> Faction_Target_Keys = new List<string>();
+    [SerializeField] private List<string> Faction_Target_Values = new List<string>();
+    [SerializeField] private List<string> Faction_Guards_Keys = new List<string>();
+    [SerializeField] private List<string> Faction_Guards_Values = new List<string>();
+    [SerializeField] private List<string> Faction_Extras_Keys = new List<string>();
+    [SerializeField] private List<string> Faction_Extras_Values = new List<string>();
 
-        public SerializableKeyValuePair(string key, string value)
-        {
-            Key = key;
-            Value = value;
-        }
-    }
+    // Replace TargetIDs, GuardIDs, ExtrasIDs
+    [SerializeField] private List<string> TargetIDs_Keys = new List<string>();
+    [SerializeField] private List<FGContract.IntListWrapper> TargetIDs_Values = new List<FGContract.IntListWrapper>();
+    [SerializeField] private List<string> GuardIDs_Keys = new List<string>();
+    [SerializeField] private List<FGContract.IntListWrapper> GuardIDs_Values = new List<FGContract.IntListWrapper>();
+    [SerializeField] private List<string> ExtrasIDs_Keys = new List<string>();
+    [SerializeField] private List<FGContract.IntListWrapper> ExtrasIDs_Values = new List<FGContract.IntListWrapper>();
 
-    // Mapping from gameplanner keys to SosigEnemyIDs.
-    [SerializeField] private List<SerializableKeyValuePair> TargetIDs = new List<SerializableKeyValuePair>(); // default key "targets"
-    [SerializeField] private List<SerializableKeyValuePair> GuardIDs = new List<SerializableKeyValuePair>(); // default key "guards"
-    [SerializeField] private List<SerializableKeyValuePair> ExtrasIDs = new List<SerializableKeyValuePair>(); // default key "extras"
     [NonSerialized] public Dictionary<string, List<SosigEnemyID>> _TargetIDs = new Dictionary<string, List<SosigEnemyID>>();
     [NonSerialized] public Dictionary<string, List<SosigEnemyID>> _GuardIDs = new Dictionary<string, List<SosigEnemyID>>();
     [NonSerialized] public Dictionary<string, List<SosigEnemyID>> _ExtrasIDs = new Dictionary<string, List<SosigEnemyID>>();
 
-    // Mapping from gameplanner keys to factions.
-    [SerializeField] private List<SerializableKeyValuePair> Faction_Target = new List<SerializableKeyValuePair>();  // Add list of factions for Target
-    [SerializeField] private List<SerializableKeyValuePair> Faction_Guards = new List<SerializableKeyValuePair>();   // Add list of factions for Guards
-    [SerializeField] private List<SerializableKeyValuePair> Faction_Extras = new List<SerializableKeyValuePair>();   // Add list of factions for Extras
     [NonSerialized] public Dictionary<string, string> _Faction_Target = new Dictionary<string, string>();
     [NonSerialized] public Dictionary<string, string> _Faction_Guards = new Dictionary<string, string>();
     [NonSerialized] public Dictionary<string, string> _Faction_Extras = new Dictionary<string, string>();
@@ -112,10 +109,22 @@ public class FGContract
         public int rewardAddedIfSucceed; // Can be zero.
     }
 
+    [Serializable]
+    public class IntListWrapper
+    {
+        public List<int> InnerList = new List<int>();
+    }
+
     // -- UI Printout Helpers --- \\
     public string PrintContract()
     {
         StringBuilder sb = new StringBuilder();
+        string GetStatusPrintFromBool(bool success, bool violated)
+        {
+            if (success) return "✔ Completed";
+            if (violated) return "✖ Failed";
+            return "Pending";
+        }
 
         sb.AppendLine($"Contract: {DisplayName}");
         sb.AppendLine($"Hiring Faction: {HiringFactionID}");
@@ -160,12 +169,10 @@ public class FGContract
                 sb.AppendLine("Required Conditions:");
                 foreach (var constraint in requiredConstraints)
                 {
-                    string status = constraint.constraintSuccess ? "✔ Completed" :
-                                    constraint.constraintViolated ? "✖ Failed" :
-                                    "Pending";
+                    string status = GetStatusPrintFromBool(constraint.constraintSuccess, 
+                                        constraint.constraintViolated);
 
-                    string penalty = constraint.rewardSubtractedIfFail > 0 ? $" -${constraint.rewardSubtractedIfFail}" : "";
-                    sb.AppendLine($"  - {constraint.ConstraintID} ({status}){penalty}");
+                    sb.AppendLine($"  - {constraint.ConstraintID} ({status})");
                 }
             }
 
@@ -174,11 +181,11 @@ public class FGContract
                 sb.AppendLine("Optional Bonuses:");
                 foreach (var constraint in optionalConstraints)
                 {
-                    string status = constraint.constraintSuccess ? "✔ Completed" :
-                                    constraint.constraintViolated ? "✖ Failed" :
-                                    "Pending";
-
+                    string status = GetStatusPrintFromBool(constraint.constraintSuccess, 
+                                        constraint.constraintViolated);
                     string bonus = constraint.rewardAddedIfSucceed > 0 ? $" +${constraint.rewardAddedIfSucceed}" : "";
+                    string penalty = constraint.rewardSubtractedIfFail > 0 ? $" -${constraint.rewardSubtractedIfFail}" : "";
+                    string outcome = $"{bonus}|{penalty}";
                     sb.AppendLine($"  - {constraint.ConstraintID} ({status}){bonus}");
                 }
             }
@@ -211,79 +218,90 @@ public class FGContract
     }
     public void ConvertToSerializable()
     {
-        GuardIDs.Clear();
-        foreach (var kvp in _GuardIDs)
+        // Convert _TargetIDs to TargetIDs_Keys and TargetIDs_Values
+        void SerializeSosigEnemyLists(Dictionary<string, List<SosigEnemyID>> source, List<string> keys, List<IntListWrapper> values)
         {
-            GuardIDs.Add(new SerializableKeyValuePair(kvp.Key, string.Join(",", kvp.Value.Select(id => ((int)id).ToString()).ToArray())));
+            keys.Clear();
+            values.Clear();
+            foreach (var kvp in source)
+            {
+                keys.Add(kvp.Key);
+                var wrapper = new IntListWrapper { InnerList = kvp.Value.Select(id => (int)id).ToList() };
+                values.Add(wrapper);
+            }
         }
-        
-        TargetIDs.Clear();
-        foreach (var kvp in _TargetIDs)
+        SerializeSosigEnemyLists(_TargetIDs, TargetIDs_Keys, TargetIDs_Values);
+        SerializeSosigEnemyLists(_GuardIDs, GuardIDs_Keys, GuardIDs_Values);
+        SerializeSosigEnemyLists(_ExtrasIDs, ExtrasIDs_Keys, ExtrasIDs_Values);
+
+        void SerializeSimpleStringDict(Dictionary<string, string> source, List<string> keys, List<string> values)
         {
-            TargetIDs.Add(new SerializableKeyValuePair(kvp.Key, string.Join(",", kvp.Value.Select(id => ((int)id).ToString()).ToArray())));
-        }
-        
-        ExtrasIDs.Clear();
-        foreach (var kvp in _ExtrasIDs)
-        {
-            ExtrasIDs.Add(new SerializableKeyValuePair(kvp.Key, string.Join(",", kvp.Value.Select(id => ((int)id).ToString()).ToArray())));
-        }
-        Faction_Target.Clear();
-        foreach (var kvp in _Faction_Target)
-        {
-            Faction_Target.Add(new SerializableKeyValuePair(kvp.Key, kvp.Value));
+            keys.Clear();
+            values.Clear();
+            foreach (var kvp in source)
+            {
+                keys.Add(kvp.Key);
+                values.Add(kvp.Value);
+            }
         }
 
-        Faction_Guards.Clear();
-        foreach (var kvp in _Faction_Guards)
-        {
-            Faction_Guards.Add(new SerializableKeyValuePair(kvp.Key, kvp.Value));
-        }
-
-        Faction_Extras.Clear();
-        foreach (var kvp in _Faction_Extras)
-        {
-            Faction_Extras.Add(new SerializableKeyValuePair(kvp.Key, kvp.Value));
-        }
+        SerializeSimpleStringDict(_Faction_Target, Faction_Target_Keys, Faction_Target_Values);
+        SerializeSimpleStringDict(_Faction_Guards, Faction_Guards_Keys, Faction_Guards_Values);
+        SerializeSimpleStringDict(_Faction_Extras, Faction_Extras_Keys, Faction_Extras_Values);
     }
 
     // Method to convert lists back to dictionaries after deserialization
     public void ConvertToDictionary()
     {
-        _GuardIDs.Clear();
-        foreach (var kvp in GuardIDs)
+        // Exit early if any of the new fields are missing
+        if (TargetIDs_Keys == null || TargetIDs_Values == null ||
+            GuardIDs_Keys == null || GuardIDs_Values == null ||
+            ExtrasIDs_Keys == null || ExtrasIDs_Values == null ||
+            Faction_Target_Keys == null || Faction_Target_Values == null ||
+            Faction_Guards_Keys == null || Faction_Guards_Values == null ||
+            Faction_Extras_Keys == null || Faction_Extras_Values == null)
         {
-            _GuardIDs.Add(kvp.Key, kvp.Value.Split(',').Select(id => (SosigEnemyID)int.Parse(id)).ToList());
-        }
-        
-        _TargetIDs.Clear();
-        foreach (var kvp in TargetIDs)
-        {
-            _TargetIDs.Add(kvp.Key, kvp.Value.Split(',').Select(id => (SosigEnemyID)int.Parse(id)).ToList());
-        }
-        
-        _ExtrasIDs.Clear();
-        foreach (var kvp in ExtrasIDs)
-        {
-            _ExtrasIDs.Add(kvp.Key, kvp.Value.Split(',').Select(id => (SosigEnemyID)int.Parse(id)).ToList());
-        }
-        _Faction_Target.Clear();
-        foreach (var kvp in Faction_Target)
-        {
-            _Faction_Target.Add(kvp.Key, kvp.Value);
+            Debug.LogWarning("One or more required fields are missing. Skipping ConvertToDictionary.");
+            return;
         }
 
-        _Faction_Guards.Clear();
-        foreach (var kvp in Faction_Guards)
+        void DeserializeSosigEnemyLists(List<string> keys, List<IntListWrapper> values, Dictionary<string, List<SosigEnemyID>> targetDict)
         {
-            _Faction_Guards.Add(kvp.Key, kvp.Value);
+            targetDict.Clear();
+            for (int i = 0; i < keys.Count; i++)
+            {
+                if (values[i] != null && values[i].InnerList != null)
+                {
+                    targetDict[keys[i]] = values[i].InnerList.Select(id => (SosigEnemyID)id).ToList();
+                } else
+                {
+                    targetDict[keys[i]] = new List<SosigEnemyID>();
+                    Debug.LogError($"Null or empty InnerList for key: {keys[i]}");
+                }
+            }
         }
+        DeserializeSosigEnemyLists(TargetIDs_Keys, TargetIDs_Values, _TargetIDs);
+        DeserializeSosigEnemyLists(GuardIDs_Keys, GuardIDs_Values, _GuardIDs);
+        DeserializeSosigEnemyLists(ExtrasIDs_Keys, ExtrasIDs_Values, _ExtrasIDs);
 
-        _Faction_Extras.Clear();
-        foreach (var kvp in Faction_Extras)
+        void DeserializeSimpleStringDict(List<string> keys, List<string> values, Dictionary<string, string> targetDict)
         {
-            _Faction_Extras.Add(kvp.Key, kvp.Value);
+            targetDict.Clear();
+            for (int i = 0; i < keys.Count; i++)
+            {
+                if (i < values.Count) // Check if the value exists
+                {
+                    targetDict[keys[i]] = values[i];
+                }
+                else
+                {
+                    Debug.LogError($"Missing value for key: {keys[i]}");
+                }
+            }
         }
+        DeserializeSimpleStringDict(Faction_Target_Keys, Faction_Target_Values, _Faction_Target);
+        DeserializeSimpleStringDict(Faction_Guards_Keys, Faction_Guards_Values, _Faction_Guards);
+        DeserializeSimpleStringDict(Faction_Extras_Keys, Faction_Extras_Values, _Faction_Extras);
     }
 }
 } // namespace NGA
